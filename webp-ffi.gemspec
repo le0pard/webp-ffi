@@ -17,10 +17,11 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
+  spec.extensions    << 'ext/Rakefile'
 
   spec.add_runtime_dependency "ffi", "~> 1.4.0"
+  spec.add_runtime_dependency "ffi-compiler", "~> 0.1.1"
 
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
-  spec.add_development_dependency "rake-compiler", "~> 0.8.3"
 end

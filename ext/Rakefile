@@ -1,0 +1,10 @@
+require 'ffi-compiler/compile_task'
+
+FFI::Compiler::CompileTask.new('webp_ffi') do |c|
+  c.have_header?('stdio.h', '/usr/local/include')
+  c.have_func?('puts')
+  c.have_library?('z')
+  c.cflags << "-arch x86_64 -arch i386" if c.platform.mac?
+  c.ldflags << "-arch x86_64 -arch i386" if c.platform.mac?
+  c.export '../lib/webp_ffi.rb'
+end
