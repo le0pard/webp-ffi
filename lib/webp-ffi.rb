@@ -1,0 +1,1 @@
+require "webp_ffi"
