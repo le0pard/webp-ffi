@@ -15,4 +15,4 @@ spec/reports
 test/tmp
 test/version_tmp
 tmp
-ext/webp_ffi/x86_64-darwin
+ext/webp_ffi/x86_64-darwin/

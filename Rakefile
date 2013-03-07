@@ -1,8 +1,9 @@
-require "bundler/gem_tasks"
-require 'ffi-compiler/compile_task'
-
-require 'rspec/core'
+require 'bundler/setup'
+require 'rake'
+require 'rake/clean'
+require 'bundler/gem_tasks'
 require 'rspec/core/rake_task'
+require 'ffi-compiler/compile_task'
 
 desc "compiler tasks"
 namespace "ffi-compiler" do
@@ -21,8 +22,13 @@ namespace "ffi-compiler" do
 end
 task :compile => ["ffi-compiler:default"]
 
-RSpec::Core::RakeTask.new(:spec) do |spec|
-  spec.pattern = FileList['spec/**/*_spec.rb']
+desc "run specs"
+task :spec do
+  RSpec::Core::RakeTask.new
 end
 
-task :default => [:compile, :spec, :clean]
+task :default => [:clean, :compile, :spec]
+
+CLEAN.include('ext/**/*{.o,.log,.so,.bundle}')
+CLEAN.include('lib/**/*{.o,.log,.so,.bundle}')
+CLEAN.include('ext/**/Makefile')
