@@ -1,16 +1,16 @@
 require 'ffi-compiler/compile_task'
 
-libwebp_dir = File.expand_path(File.join(File.dirname(__FILE__), %w{libwebp}))
-
 FFI::Compiler::CompileTask.new('webp_ffi') do |c|
   c.have_header?('stdio.h', '/usr/local/include')
   c.have_func?('puts')
   c.have_library?('z')
-  
-  c.have_library?('libwebp', ['/usr/local/lib', File.join(libwebp_dir, "lib")])
-  c.have_header?('decode.h', ['/usr/local/include', File.join(libwebp_dir, "include")])
-  c.have_header?('encode.h', ['/usr/local/include', File.join(libwebp_dir, "include")])
-  
+  # webp
+  c.have_header?('decode.h', '/usr/local/include')
+  c.have_header?('encode.h', '/usr/local/include')
+  c.have_func?('WebPDecoderConfig')
+  c.have_func?('WebPGetInfo')
+  c.have_library?('webp')
+  # compiler flags
   c.cflags << "-arch x86_64 -arch i386" if c.platform.mac?
   c.ldflags << "-arch x86_64 -arch i386" if c.platform.mac?
 end
