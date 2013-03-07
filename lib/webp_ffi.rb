@@ -8,4 +8,5 @@ module WebpFfi
   ffi_lib FFI::Compiler::Loader.find('webp_ffi')
 
   attach_function :test, [:int], :int
+  
 end
