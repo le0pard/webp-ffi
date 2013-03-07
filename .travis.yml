@@ -1,6 +1,6 @@
 language: ruby
 before_install:
-  - sh -c 'spec/build.sh'
+  - sh -c 'spec/build_webp_travis.sh'
   - bundle install
 rvm:
   - 1.9.2
