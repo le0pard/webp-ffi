@@ -25,4 +25,4 @@ RSpec::Core::RakeTask.new(:spec) do |spec|
   spec.pattern = FileList['spec/**/*_spec.rb']
 end
 
-task :default => [:clean, :compile, :spec, :clean]
+task :default => [:compile, :spec, :clean]
