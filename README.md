@@ -1,4 +1,4 @@
-# Webp-ffi
+# Webp-ffi [![Build Status](https://travis-ci.org/le0pard/webp-ffi.png)](https://travis-ci.org/le0pard/webp-ffi)
 
 Ruby wrapper for libwebp.
 
