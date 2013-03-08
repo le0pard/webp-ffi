@@ -26,7 +26,7 @@ describe WebpFfi do
   
   context "#webp_size" do
     factories[:webp].each do |image|
-      it "show webp #{image} size" do
+      it "show webp #{image} size == #{factories[:info][image][:size]}" do
         filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
         data = File.open(filename, "rb").read
         info = WebpFfi.webp_size(data)
