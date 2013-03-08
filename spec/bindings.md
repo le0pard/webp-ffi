@@ -1,0 +1,19 @@
+Decode:
+  WebPGetDecoderVersion
+  WebPGetInfo
+  WebPDecodeRGBA
+  WebPDecodeARGB
+  WebPDecodeBGRA
+  WebPDecodeBGR
+  WebPDecodeRGB
+
+Encode:
+  WebPGetEncoderVersion
+  WebPEncodeRGBA
+  WebPEncodeBGRA
+  WebPEncodeRGB
+  WebPEncodeBGR
+  WebPEncodeLosslessRGBA
+  WebPEncodeLosslessBGRA
+  WebPEncodeLosslessRGB
+  WebPEncodeLosslessBGR
