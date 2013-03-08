@@ -9,9 +9,9 @@ extern "C" {
 #endif
 //webp
 int WebPGetInfo(const uint8_t* data, size_t data_size, int* width, int* height);
+uint8_t* WebPDecodeRGBA(const uint8_t* data, size_t data_size, int* width, int* height);
 
-// own
-VP8StatusCode webp_get_features(const uint8_t* data, size_t data_size, WebPBitstreamFeatures* features);
+//own
 int test(int n);
 
 #if defined(__cplusplus) || defined(c_plusplus)

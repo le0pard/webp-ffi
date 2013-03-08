@@ -19,7 +19,7 @@ module WebpFfi
     # webp lib functions
     attach_function :WebPGetInfo, [:pointer, :size_t, :pointer, :pointer], :int
     
-    attach_function :webp_get_features, [:pointer, :size_t, :pointer], vp8_status_code_enum
+    attach_function :WebPDecodeRGBA, [:pointer, :size_t, :pointer, :pointer], :pointer
 
     attach_function :test, [:int], :int
   end

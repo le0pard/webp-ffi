@@ -18,20 +18,15 @@ module WebpFfi
       end
     end
     
-    def webp_info(data)
+    def webp_decode_rgba(data)
       return nil if data.nil?
-      pointer = FFI::MemoryPointer.new :char, C::WebPBitstreamFeatures.size, false
-      info = C::WebPBitstreamFeatures.new pointer
+      width_ptr = FFI::MemoryPointer.new(:int, 2)
+      height_ptr = FFI::MemoryPointer.new(:int, 2)
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size
       memBuf = FFI::MemoryPointer.new(:char, size)
       memBuf.put_bytes(0, data)
-      result = C.webp_get_features(memBuf, size, pointer)
-      if result == :vp8_status_ok
-        return { width: info[:width], height: info[:height], has_alpha: (info[:has_alpha] == 1 ? true : false) }
-      else
-        raise InvalidImageFormatError, "invalid webp image. Error code: #{result}"
-        return nil
-      end
+      pointer = C.WebPDecodeRGBA(memBuf, size, width_ptr, height_ptr)
+      pointer.null? ? nil : pointer.read_string()
     end
     
   end

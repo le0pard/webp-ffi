@@ -54,20 +54,14 @@ describe WebpFfi do
     end
   end
   
-  context "webp_info" do
+  context "webp_decode_rgba" do
     factories[:webp].each do |image|
-      it "#{image} image info" do
+      it "#{image} webp_decode_rgba" do
         filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
         data = File.open(filename, "rb").read
-        info = WebpFfi.webp_info(data)
-        [info[:width], info[:height]].should == factories[:info][image][:size]
-        info[:has_alpha].should == factories[:info][image][:has_alpha]
+        output_data = WebpFfi.webp_decode_rgba(data)
+        # TODO: finish
       end
-    end
-    it "raise InvalidImageFormatError for non-webp image" do
-      filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/1.png"))
-      data = File.open(filename, "rb").read
-      expect { WebpFfi.webp_info(data) }.to raise_error WebpFfi::InvalidImageFormatError
     end
   end
 
