@@ -1,7 +1,6 @@
 language: ruby
 before_install:
   - ./spec/travis_build.sh
-  - bundle install
 rvm:
   - 1.9.2
   - 1.9.3
