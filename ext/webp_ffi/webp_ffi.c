@@ -40,6 +40,14 @@ void encoder_version(char *version) {
     (v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff);
 }
 
+int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height) {
+  return WebPGetInfo(data, data_size, width, height);
+}
+
+uint8_t* webp_decode_rgba(const uint8_t* data, size_t data_size, int* width, int* height) {
+  return WebPDecodeRGBA(data, data_size, width, height);
+}
+
 // test
 int test(int n) {
   return n + 100;

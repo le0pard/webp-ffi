@@ -23,7 +23,7 @@ module WebpFfi
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size
       memBuf = FFI::MemoryPointer.new(:char, size)
       memBuf.put_bytes(0, data)
-      if C.WebPGetInfo(memBuf, size, width_ptr, height_ptr) == 1
+      if C.webp_get_info(memBuf, size, width_ptr, height_ptr) == 1
         [width_ptr.null? ? nil : width_ptr.read_int, height_ptr.null? ? nil : height_ptr.read_int]
       else
         raise InvalidImageFormatError, "invalid webp image"
@@ -38,7 +38,7 @@ module WebpFfi
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size
       memBuf = FFI::MemoryPointer.new(:char, size)
       memBuf.put_bytes(0, data)
-      pointer = C.WebPDecodeRGBA(memBuf, size, width_ptr, height_ptr)
+      pointer = C.webp_decode_rgba(memBuf, size, width_ptr, height_ptr)
       pointer.null? ? nil : pointer.read_string()
     end
     
