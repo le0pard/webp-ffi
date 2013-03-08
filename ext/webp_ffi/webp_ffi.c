@@ -3,8 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+// utils
+#include "./util.h"
+#include "./webp_ffi.h"
+
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "webp/config.h"
 #endif
 
 #ifdef WEBP_HAVE_PNG
@@ -19,10 +23,6 @@
 #ifdef WEBP_HAVE_TIFF
 #include <tiffio.h>
 #endif
-
-// utils
-#include "./util.h"
-#include "./webp_ffi.h"
 
 
 #if defined(__cplusplus) || defined(c_plusplus)
