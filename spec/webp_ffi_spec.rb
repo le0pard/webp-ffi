@@ -26,7 +26,7 @@ describe WebpFfi do
   
   context "#webp_size" do
     factories[:webp].each do |image|
-      it "show webp #{image} size == #{factories[:info][image][:size]}" do
+      it "#{image} image size == #{factories[:info][image][:size]}" do
         filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
         data = File.open(filename, "rb").read
         info = WebpFfi.webp_size(data)
@@ -35,7 +35,7 @@ describe WebpFfi do
         info.should == factories[:info][image][:size]
       end
     end
-    it "nil non-webp image" do
+    it "nil for non-webp image" do
       filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/1.png"))
       data = File.open(filename, "rb").read
       WebpFfi.webp_size(data).should be_nil
