@@ -4,11 +4,15 @@ module WebpFfi
   class << self
     
     def decoder_version
-      C.decoder_version
+      pointer = FFI::MemoryPointer.new(:char, 20)
+      C.decoder_version(pointer)
+      pointer.null? ? nil : pointer.read_string()
     end
     
     def encoder_version
-      C.encoder_version
+      pointer = FFI::MemoryPointer.new(:char, 20)
+      C.encoder_version(pointer)
+      pointer.null? ? nil : pointer.read_string()
     end
     
     # get webp image size

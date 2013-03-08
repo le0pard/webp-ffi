@@ -36,14 +36,14 @@ describe WebpFfi do
     WebpFfi::C.test(150).should == 250
   end
   
-  it "show decoder version" do
-    puts "decoder version: #{WebpFfi.decoder_version}"
+  it "decoder version" do
     WebpFfi.decoder_version.should_not be_nil
+    WebpFfi.decoder_version.should =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)$/
   end
   
-  it "show encoder version" do
-    puts "encoder version: #{WebpFfi.encoder_version}"
+  it "encoder version" do
     WebpFfi.encoder_version.should_not be_nil
+    WebpFfi.decoder_version.should =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)$/
   end
   
   context "webp_size" do

@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "webp/decode.h"
+#include "webp/encode.h"
+
 // utils
 #include "./util.h"
 #include "./webp_ffi.h"
@@ -25,20 +28,16 @@
 extern "C" {
 #endif
 
-const char *decoder_version(void) {
-  const char buffer[20];
-  const int version = WebPGetDecoderVersion();
-  sprintf(buffer, "%d.%d.%d",
-    (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff);
-  return buffer;
+void decoder_version(char *version) {
+  int v = WebPGetDecoderVersion();
+  sprintf(version, "%d.%d.%d",
+    (v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff);
 }
 
-const char *encoder_version(void) {
-  const char buffer[20];
-  const int version = WebPGetEncoderVersion();
-  sprintf(buffer, "%d.%d.%d",
-    (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff);
-  return buffer;
+void encoder_version(char *version) {
+  int v = WebPGetEncoderVersion();
+  sprintf(version, "%d.%d.%d",
+    (v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff);
 }
 
 // test

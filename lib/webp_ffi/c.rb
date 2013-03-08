@@ -17,8 +17,8 @@ module WebpFfi
     end
     
     # webp lib functions
-    attach_function :decoder_version, [], :string
-    attach_function :encoder_version, [], :string
+    attach_function :decoder_version, [:pointer], :void
+    attach_function :encoder_version, [:pointer], :void
     
     attach_function :WebPGetInfo, [:pointer, :size_t, :pointer, :pointer], :int
     
