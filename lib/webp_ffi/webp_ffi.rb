@@ -4,13 +4,13 @@ module WebpFfi
   class << self
     
     def decoder_version
-      pointer = FFI::MemoryPointer.new(:char, 20)
+      pointer = FFI::MemoryPointer.new(:char, 10)
       C.decoder_version(pointer)
       pointer.null? ? nil : pointer.read_string()
     end
     
     def encoder_version
-      pointer = FFI::MemoryPointer.new(:char, 20)
+      pointer = FFI::MemoryPointer.new(:char, 10)
       C.encoder_version(pointer)
       pointer.null? ? nil : pointer.read_string()
     end
