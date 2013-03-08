@@ -2,6 +2,15 @@ require "webp_ffi/c"
 
 module WebpFfi
   class << self
+    
+    def decoder_version
+      C.decoder_version
+    end
+    
+    def encoder_version
+      C.encoder_version
+    end
+    
     # get webp image size
     def webp_size(data)
       return nil if data.nil?

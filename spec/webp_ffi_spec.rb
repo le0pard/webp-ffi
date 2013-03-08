@@ -36,6 +36,16 @@ describe WebpFfi do
     WebpFfi::C.test(150).should == 250
   end
   
+  it "show decoder version" do
+    puts "decoder version: #{WebpFfi.decoder_version}"
+    WebpFfi.decoder_version.should_not be_nil
+  end
+  
+  it "show encoder version" do
+    puts "encoder version: #{WebpFfi.encoder_version}"
+    WebpFfi.encoder_version.should_not be_nil
+  end
+  
   context "webp_size" do
     factories[:webp].each do |image|
       it "#{image} image size == #{factories[:info][image][:size]}" do
