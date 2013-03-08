@@ -22,15 +22,15 @@
 #ifdef WEBP_HAVE_TIFF
 #include <tiffio.h>
 #endif
+
 // utils
 #include "./util.h"
+#include "./webp_ffi.h"
 
-#include "webp_ffi.h"
 
-
-#if defined(__cplusplus) || defined(c_plusplus)
-extern "C" {
-#endif
+//#if defined(__cplusplus) || defined(c_plusplus)
+//extern "C" {
+//#endif
 
 int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height) {
   return WebPGetInfo(data, data_size, width, height);
@@ -43,6 +43,6 @@ int test(int n)
 }
 
 
-#if defined(__cplusplus) || defined(c_plusplus)
-}    // extern "C"
-#endif
+//#if defined(__cplusplus) || defined(c_plusplus)
+//}    // extern "C"
+//#endif
