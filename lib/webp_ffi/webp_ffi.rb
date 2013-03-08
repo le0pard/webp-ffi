@@ -1,7 +1,7 @@
 require "webp_ffi/c"
 
 module WebpFfi
-  module Webp
+  class << self
     # get webp image size
     def webp_size(data)
       return nil if data.nil?
