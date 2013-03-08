@@ -25,10 +25,11 @@ module WebpFfi
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size
       memBuf = FFI::MemoryPointer.new(:char, size)
       memBuf.put_bytes(0, data)
-      if C.webp_get_features(memBuf, size, pointer) == 1
+      result = C.webp_get_features(memBuf, size, pointer)
+      if result == :vp8_status_ok
         return { width: info[:width], height: info[:height], has_alpha: (info[:has_alpha] == 1 ? true : false) }
       else
-        raise InvalidImageFormatError, "invalid webp image"
+        raise InvalidImageFormatError, "invalid webp image. Error code: #{result}"
         return nil
       end
     end

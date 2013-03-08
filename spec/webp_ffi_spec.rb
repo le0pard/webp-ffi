@@ -67,7 +67,7 @@ describe WebpFfi do
     it "raise InvalidImageFormatError for non-webp image" do
       filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/1.png"))
       data = File.open(filename, "rb").read
-      expect { WebpFfi.webp_size(data) }.to raise_error WebpFfi::InvalidImageFormatError
+      expect { WebpFfi.webp_info(data) }.to raise_error WebpFfi::InvalidImageFormatError
     end
   end
 

@@ -29,12 +29,8 @@
 extern "C" {
 #endif
 
-//get webp info
-int webp_get_features(const uint8_t* data, size_t data_size, WebPBitstreamFeatures* features){
-  if (WebPGetFeatures(data, data_size, features) != VP8_STATUS_OK) {
-    return 0;
-  }
-  return 1;
+VP8StatusCode webp_get_features(const uint8_t* data, size_t data_size, WebPBitstreamFeatures* features){
+  return WebPGetFeatures(data, data_size, features);
 }
 
 // test
