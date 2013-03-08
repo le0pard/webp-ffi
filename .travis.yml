@@ -9,7 +9,6 @@ rvm:
   - rbx-19mode
   - ruby-head
   - jruby-head
-  - rbx-head
 notifications:
   email: false
 branches:
@@ -20,4 +19,3 @@ matrix:
   allow_failures:
     - rvm: ruby-head
     - rvm: jruby-head
-    - rvm: rbx-head
