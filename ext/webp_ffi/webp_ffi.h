@@ -1,3 +1,6 @@
+#include "webp/decode.h"
+#include "webp/encode.h"
+
 #ifndef _WEBP_FFI_H_
 #define _WEBP_FFI_H_
 

@@ -2,9 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// libwebp
-#include "webp/decode.h"
-#include "webp/encode.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
