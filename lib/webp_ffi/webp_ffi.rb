@@ -13,6 +13,22 @@ module WebpFfi
       if C.WebPGetInfo(memBuf, size, width_ptr, height_ptr) == 1
         [width_ptr.null? ? nil : width_ptr.read_int, height_ptr.null? ? nil : height_ptr.read_int]
       else
+        raise InvalidImageFormatError, "invalid webp image"
+        return nil
+      end
+    end
+    
+    def webp_info(data)
+      return nil if data.nil?
+      pointer = FFI::MemoryPointer.new :char, C::WebPBitstreamFeatures.size, false
+      info = C::WebPBitstreamFeatures.new pointer
+      size = data.respond_to?(:bytesize) ? data.bytesize : data.size
+      memBuf = FFI::MemoryPointer.new(:char, size)
+      memBuf.put_bytes(0, data)
+      if C.webp_get_features(memBuf, size, pointer) == 1
+        return { width: info[:width], height: info[:height], has_alpha: (info[:has_alpha] == 1 ? true : false) }
+      else
+        raise InvalidImageFormatError, "invalid webp image"
         return nil
       end
     end
