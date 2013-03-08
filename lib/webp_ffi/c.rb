@@ -1,3 +1,6 @@
+require 'ffi'
+require 'ffi-compiler/loader'
+
 module WebpFfi
   module C
     extend FFI::Library
