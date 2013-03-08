@@ -4,7 +4,7 @@ require 'ffi-compiler/loader'
 module WebpFfi
   module C
     extend FFI::Library
-    ffi_lib FFI::Compiler::Loader.find('webp_ffi')
+    ffi_lib FFI::Compiler::Loader.find('webp_ffi'), 'webp'
   end
 end
 
