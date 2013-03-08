@@ -32,10 +32,6 @@
 extern "C" {
 #endif
 
-int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height) {
-  return WebPGetInfo(data, data_size, width, height);
-}
-
 // test
 int test(int n)
 {

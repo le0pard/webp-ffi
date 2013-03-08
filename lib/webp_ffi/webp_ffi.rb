@@ -10,7 +10,7 @@ module WebpFfi
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size
       memBuf = FFI::MemoryPointer.new(:char, size)
       memBuf.put_bytes(0, data)
-      if C.webp_get_info(memBuf, size, width_ptr, height_ptr) == 1
+      if C.WebPGetInfo(memBuf, size, width_ptr, height_ptr) == 1
         [width_ptr.read_int, height_ptr.read_int]
       else
         return nil
