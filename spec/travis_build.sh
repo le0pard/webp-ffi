@@ -5,4 +5,4 @@ cd libwebp-0.2.1
 ./configure
 make
 sudo make install
-sudo ln -s /usr/local/lib/libwebp.so /usr/lib/libwebp.so
+sudo ln -fs /usr/local/lib/libwebp.* /usr/lib/
