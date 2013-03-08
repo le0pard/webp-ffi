@@ -1,6 +1,5 @@
 language: ruby
 before_install:
-  - sudo chsh -s /bin/bash
   - ./spec/travis_build.sh
   - bundle install
 rvm:
