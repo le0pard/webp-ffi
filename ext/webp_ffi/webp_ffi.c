@@ -59,6 +59,15 @@ int webp_encode(const uint8_t* data, size_t data_size, const FfiWebpConfig* ffi_
     fprintf(stderr, "Error! Version mismatch!\n");
     return -1;
   }
+  
+  config.sns_strength = 90;
+  config.filter_sharpness = 6;
+  config.alpha_quality = 90;
+  
+  if (!WebPValidateConfig(&config)) {
+    fprintf(stderr, "Error! Invalid configuration.\n");
+    return -1;
+  }
   // NOT finished
   return return_value;
 }

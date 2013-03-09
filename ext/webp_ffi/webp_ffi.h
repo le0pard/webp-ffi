@@ -10,6 +10,9 @@ extern "C" {
     float quality;          // between 0 (smallest file) and 100 (biggest)
     int method;             // quality/speed trade-off (0=fast, 6=slower-better)
   } FfiWebpConfig;
+  
+  
+  
 
   void decoder_version(char *version);
   void encoder_version(char *version);
