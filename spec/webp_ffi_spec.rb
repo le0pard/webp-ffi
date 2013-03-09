@@ -71,7 +71,6 @@ describe WebpFfi do
         filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
         data = File.open(filename, "rb").read
         output_data = WebpFfi.encode_rgb(data)
-        puts output_data.inspect
       end
     end
   end

@@ -45,8 +45,8 @@ module WebpFfi
     def encode(data, options = {})
       return nil if data.nil?
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size
-      options_pointer = FFI::MemoryPointer.new :char, C::WebPConfig.size, false
-      options_struct = C::WebPConfig.new options_pointer
+      options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpConfig.size, false
+      options_struct = C::FfiWebpConfig.new options_pointer
       memBuf = FFI::MemoryPointer.new(:char, size)
       memBuf.put_bytes(0, data)
       output_pointer = FFI::MemoryPointer.new :pointer, 1

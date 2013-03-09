@@ -28,29 +28,6 @@
 extern "C" {
 #endif
 
-// utils
-typedef enum {
-  PNG_ = 0,
-  JPEG_,
-  TIFF_,  // 'TIFF' clashes with libtiff
-  UNSUPPORTED
-} InputFileFormat;
-
-static InputFileFormat GetImageType(const uint8_t* buf) {
-  InputFileFormat format = UNSUPPORTED;
-  unsigned int magic;
-
-  magic = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-  if (magic == 0x89504E47U) {
-    format = PNG_;
-  } else if (magic >= 0xFFD8FF00U && magic <= 0xFFD8FFFFU) {
-    format = JPEG_;
-  } else if (magic == 0x49492A00 || magic == 0x4D4D002A) {
-    format = TIFF_;
-  }
-  return format;
-}
-
 // main functions
 
 void decoder_version(char *version) {
@@ -73,9 +50,15 @@ size_t webp_encode_rgb(const uint8_t* rgb, int width, int height, int stride, fl
   return WebPEncodeRGB(rgb, width, height, stride, quality_factor, output);
 }
 
-int webp_encode(const uint8_t* data, size_t data_size, const WebPConfig* config, uint8_t** output) {
+int webp_encode(const uint8_t* data, size_t data_size, const FfiWebpConfig* ffi_config, uint8_t** output) {
   int return_value = -1;
   WebPPicture picture;
+  WebPConfig config;
+  if (!WebPPictureInit(&picture) ||
+      !WebPConfigInit(&config)) {
+    fprintf(stderr, "Error! Version mismatch!\n");
+    return -1;
+  }
   // NOT finished
   return return_value;
 }
