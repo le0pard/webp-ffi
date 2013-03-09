@@ -3,6 +3,7 @@ require 'spec_helper'
 describe WebpFfi do
   factories = {
     webp: ["1.webp", "2.webp", "3.webp", "4.webp", "5.webp", "6.webp"],
+    images: ["1.png", "2.png", "3.png", "4.png", "5.jpg", "6.jpg"],
     info: {
       "1.webp" => {
         size: [400, 301],
@@ -64,13 +65,23 @@ describe WebpFfi do
     end
   end
   
-  context "webp_decode_rgba" do
-    factories[:webp].each do |image|
-      it "#{image} webp_decode_rgba" do
+  context "webp_encode_rgb" do
+    factories[:images].each do |image|
+      it "#{image} encode_rgb" do
         filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
         data = File.open(filename, "rb").read
-        output_data = WebpFfi.webp_decode_rgba(data)
-        # TODO: finish
+        output_data = WebpFfi.encode_rgb(data)
+        puts output_data.inspect
+      end
+    end
+  end
+  
+  context "encode" do
+    factories[:images].each do |image|
+      it "#{image} image" do
+        filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
+        data = File.open(filename, "rb").read
+        output_data = WebpFfi.encode(data)
       end
     end
   end
