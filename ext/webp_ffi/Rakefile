@@ -11,6 +11,6 @@ FFI::Compiler::CompileTask.new('webp_ffi') do |c|
   c.have_func?('WebPGetInfo')
   c.have_library?('webp')
   # compiler flags
-  c.cflags << "-arch x86_64 -arch i386" if c.platform.mac?
-  c.ldflags << "-arch x86_64 -arch i386" if c.platform.mac?
+  c.cflags << "-arch x86_64" if c.platform.mac?
+  c.ldflags << "-arch x86_64" if c.platform.mac?
 end
