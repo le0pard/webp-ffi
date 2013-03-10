@@ -43,18 +43,17 @@
 
 <p>For ubuntu, debian:</p>
 
-<pre><code>sudo apt-get install libjpeg62-dev
-sudo apt-get install libpng12-dev
+<pre><code>sudo apt-get install libjpeg62-dev libpng12-dev libtiff4-dev
 </code></pre>
 
 <p>For Mac OS:</p>
 
-<pre><code>sudo port install jpeg libpng
+<pre><code>sudo port install jpeg libpng tiff
 </code></pre>
 
 <p>or:</p>
 
-<pre><code>brew install libjpg libpng
+<pre><code>brew install libjpg libpng libtiff
 </code></pre>
 
 <p>Next, you should <a href="https://developers.google.com/speed/webp/docs/compiling">install libwebp</a>.</p>
@@ -105,17 +104,26 @@ sudo apt-get install libpng12-dev
 2.0.0p0 :009 &gt; out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
  =&gt; "/Users/leo/programs/projects/webp-ffi/tmp/4.png" 
 2.0.0p0 :010 &gt; WebpFfi.decode(filename, out_filename)
-Saved file /Users/leo/programs/projects/webp-ffi/tmp/4.png
  =&gt; 0 
 </code></pre>
 
-<p>Encode png image to webp:</p>
+<p>Encode png, jpg or tiff image to webp:</p>
 
 <pre><code>2.0.0p0 :011 &gt; filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.png"))
  =&gt; "/Users/leo/programs/projects/webp-ffi/spec/factories/4.png" 
 2.0.0p0 :012 &gt; out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.webp"))
  =&gt; "/Users/leo/programs/projects/webp-ffi/tmp/4.webp" 
 2.0.0p0 :013 &gt; WebpFfi.encode(filename, out_filename)
+ =&gt; 0
+</code></pre>
+
+<p>Encode png, jpg or tiff image to webp (with options):</p>
+
+<pre><code>2.0.0p0 :011 &gt; filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.png"))
+ =&gt; "/Users/leo/programs/projects/webp-ffi/spec/factories/4.png" 
+2.0.0p0 :012 &gt; out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.webp"))
+ =&gt; "/Users/leo/programs/projects/webp-ffi/tmp/4.webp" 
+2.0.0p0 :013 &gt; WebpFfi.encode(filename, out_filename, quality: 50, resize_w: 100, resize_h: 200)
  =&gt; 0
 </code></pre>
 
