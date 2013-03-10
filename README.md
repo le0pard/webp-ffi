@@ -53,10 +53,8 @@ Basic info about libwebp (encoder and decoder versions):
      
 Get size (width and height) from webp image:
 
-    2.0.0p0 :001 > require 'webp_ffi'
-     => true
-    2.0.0p0 :006 > filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
-    2.0.0p0 :007 > WebpFfi.webp_size(File.open(filename, "rb").read)
+    filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
+    WebpFfi.webp_size(File.open(filename, "rb").read)
      => [2000, 2353]
     
 Decode webp image to png:
