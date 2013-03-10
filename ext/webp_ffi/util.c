@@ -361,7 +361,7 @@ int UtilReadPicture(const char* const filename, WebPPicture* const pic,
   return ok;
 }
 
-void UtilSaveOutput(const WebPDecBuffer* const buffer,
+int UtilSaveOutput(const WebPDecBuffer* const buffer,
                        OutputFileFormat format, const char* const out_file) {
   FILE* fout = NULL;
   int ok = 1;
@@ -389,11 +389,7 @@ void UtilSaveOutput(const WebPDecBuffer* const buffer,
   if (fout) {
     fclose(fout);
   }
-  if (ok) {
-    printf("Saved file %s\n", out_file);
-  } else {
-    fprintf(stderr, "Error writing file %s !!\n", out_file);
-  }
+  return ok;
 }
 
 // -----------------------------------------------------------------------------

@@ -20,7 +20,7 @@ typedef enum {
   UNSUPPORTED
 } InputFileFormat;
 
-void UtilSaveOutput(const WebPDecBuffer* const buffer, OutputFileFormat format, const char* const out_file);
+int UtilSaveOutput(const WebPDecBuffer* const buffer, OutputFileFormat format, const char* const out_file);
 // Allocates storage for entire file 'file_name' and returns contents and size
 // in 'data' and 'data_size'. Returns 1 on success, 0 otherwise. '*data' should
 // be deleted using free().

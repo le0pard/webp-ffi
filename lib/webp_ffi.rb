@@ -8,8 +8,9 @@ module WebpFfi
   end
 end
 
+require "webp_ffi/options"
 require "webp_ffi/c"
 require "webp_ffi/error"
-require "webp_ffi/libc"
+require "webp_ffi/libc" # not used right now
 require "webp_ffi/webp_ffi"
 require "webp_ffi/version"

@@ -1,3 +1,4 @@
+require "webp_ffi/options"
 require "webp_ffi/c"
 
 module WebpFfi
@@ -38,7 +39,8 @@ module WebpFfi
     
     # encode
     def encode(input_file, output_file, options = {})
-      C.webp_encode(input_file, output_file)
+      options_obj = Options.new options
+      C.webp_encode(input_file, output_file, options_obj.encode_pointer)
     end
     
   end

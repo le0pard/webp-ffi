@@ -66,10 +66,9 @@ Decode webp image to png:
     2.0.0p0 :009 > out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
      => "/Users/leo/programs/projects/webp-ffi/tmp/4.png" 
     2.0.0p0 :010 > WebpFfi.decode(filename, out_filename)
-    Saved file /Users/leo/programs/projects/webp-ffi/tmp/4.png
      => 0 
 
-Encode png image to webp:
+Encode png, jpg or tiff image to webp:
 
     2.0.0p0 :011 > filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.png"))
      => "/Users/leo/programs/projects/webp-ffi/spec/factories/4.png" 

@@ -9,13 +9,16 @@ extern "C" {
     int lossless;           // Lossless encoding (0=lossy(default), 1=lossless).
     float quality;          // between 0 (smallest file) and 100 (biggest)
     int method;             // quality/speed trade-off (0=fast, 6=slower-better)
-  } FfiWebpConfig;
+    int segments;           // maximum number of segments to use, in [1..4]
+    int sns_strength;       // Spatial Noise Shaping. 0=off, 100=maximum.
+    int alpha_quality;      // Between 0 (smallest size) and 100 (lossless). Default is 100.
+  } FfiWebpEncodeConfig;
 
   void decoder_version(char *version);
   void encoder_version(char *version);
   int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height);
   int webp_decode(const char *in_file, const char *out_file);
-  int webp_encode(const char *in_file, const char *out_file);
+  int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeConfig *encode_config);
   int test(int n);
 
 #if defined(__cplusplus) || defined(c_plusplus)

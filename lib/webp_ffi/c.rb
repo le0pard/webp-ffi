@@ -1,16 +1,13 @@
 module WebpFfi
   module C
-    # enum
-    WebpImageHint = enum(:webp_hint_default, 0,
-      :webp_hint_picture,
-      :webp_hint_photo,
-      :webp_hint_graph,
-      :webp_hint_last)
     # struct
-    class FfiWebpConfig < FFI::Struct
+    class FfiWebpEncodeConfig < FFI::Struct
       layout  :lossless, :int,
         :quality, :float,
-        :method, :int
+        :method, :int,
+        :segments, :int,
+        :sns_strength, :int,
+        :alpha_quality, :int
     end
    
     # webp lib functions
@@ -18,7 +15,7 @@ module WebpFfi
     attach_function :encoder_version, [:pointer], :void
     attach_function :webp_get_info, [:pointer, :size_t, :pointer, :pointer], :int
     attach_function :webp_decode, [:string, :string], :int
-    attach_function :webp_encode, [:string, :string], :int
+    attach_function :webp_encode, [:string, :string, :pointer], :int
 
     attach_function :test, [:int], :int
   end

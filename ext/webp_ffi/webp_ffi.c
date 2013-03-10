@@ -114,13 +114,31 @@ Error:
 
 
 
-int webp_encode(const char *in_file, const char *out_file) {
+int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeConfig *encode_config) {
   int return_value = -1;
   FILE *out = NULL;
   int keep_alpha = 1;
   WebPPicture picture;
   WebPConfig config;
-  
+  // config
+  if (encode_config->lossless && (encode_config->lossless == 0 || encode_config->lossless == 1)){
+    config.lossless = encode_config->lossless;
+  }
+  if (encode_config->quality){
+    config.quality = encode_config->quality;
+  }
+  if (encode_config->method && (encode_config->method >= 0 && encode_config->method < 7)){
+    config.method = encode_config->method;
+  }
+  if (encode_config->segments && (encode_config->segments >= 1 && encode_config->segments < 5)){
+    config.segments = encode_config->segments;
+  }
+  if (encode_config->sns_strength && (encode_config->sns_strength >= 0 && encode_config->sns_strength <= 100)){
+    config.sns_strength = encode_config->sns_strength;
+  }
+  if (encode_config->alpha_quality && (encode_config->alpha_quality >= 0 && encode_config->alpha_quality <= 100)){
+    config.alpha_quality = encode_config->alpha_quality;
+  }
   
   if (!WebPPictureInit(&picture) ||
       !WebPConfigInit(&config)) {
