@@ -93,10 +93,12 @@ int webp_decode(const uint8_t* data, size_t data_size, uint8_t* output, int* out
     default:
       return -1;
   }
-
-  //config.output.u.RGBA.rgba = (uint8_t*)output;
-  //config.output.u.RGBA.size = output_size;
-  //config.output.is_external_memory = 1;
+  
+  int bufferSize = config.input.width * config.input.height * 4;
+  config.output.u.RGBA.stride = config.input.width * 4;
+  config.output.u.RGBA.size = bufferSize;
+  config.output.is_external_memory = 1;
+  config.output.u.RGBA.rgba = malloc(config.output.u.RGBA.stride * config.input.height);
   
   status = WebPDecode(data, data_size, &config);
   ok = (status == VP8_STATUS_OK);
@@ -106,8 +108,7 @@ int webp_decode(const uint8_t* data, size_t data_size, uint8_t* output, int* out
   }
   *output = config.output.u.RGBA.rgba;
   *output_size = config.output.u.RGBA.size;
-  //WebPFreeDecBuffer(output_buffer);
-  // NOT finished
+  WebPFreeDecBuffer(output_buffer);
   return return_value;
 }
 

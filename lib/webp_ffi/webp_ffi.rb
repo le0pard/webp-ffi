@@ -37,12 +37,12 @@ module WebpFfi
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size
       memBuf = FFI::MemoryPointer.new(:char, size)
       memBuf.put_bytes(0, data)
-      output_pointer = FFI::MemoryPointer.new :char, size
+      output_pointer = FFI::MemoryPointer.new :char
       output_pointer_size = FFI::MemoryPointer.new(:int, 8)
       C.webp_decode(memBuf, size, output_pointer, output_pointer_size)
       puts "Size: #{output_pointer_size.read_int}"
       puts "P Size: #{output_pointer.size}"
-      output_pointer.null? ? nil : output_pointer.read_string()
+      output_pointer.null? ? nil : output_pointer.get_bytes(0, output_pointer.size)
     end
     
     # encode
