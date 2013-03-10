@@ -39,8 +39,8 @@ describe WebpFfi do
   }
 
   it "calculate plus 100 by test" do
-    WebpFfi::C.test(100).should == 200
-    WebpFfi::C.test(150).should == 250
+    WebpFfi::C.test_c(100).should == 200
+    WebpFfi::C.test_c(150).should == 250
   end
   
   it "decoder version" do

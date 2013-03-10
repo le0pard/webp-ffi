@@ -76,6 +76,15 @@ Encode png, jpg or tiff image to webp:
      => "/Users/leo/programs/projects/webp-ffi/tmp/4.webp" 
     2.0.0p0 :013 > WebpFfi.encode(filename, out_filename)
      => 0
+     
+Encode png, jpg or tiff image to webp (with options):
+
+    2.0.0p0 :011 > filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.png"))
+     => "/Users/leo/programs/projects/webp-ffi/spec/factories/4.png" 
+    2.0.0p0 :012 > out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.webp"))
+     => "/Users/leo/programs/projects/webp-ffi/tmp/4.webp" 
+    2.0.0p0 :013 > WebpFfi.encode(filename, out_filename, quality: 50, resize_w: 100, resize_h: 200)
+     => 0
 
 ## Contributing
 

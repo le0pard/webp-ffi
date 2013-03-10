@@ -127,17 +127,27 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   if (encode_config->quality){
     config.quality = encode_config->quality;
   }
-  if (encode_config->method && (encode_config->method >= 0 && encode_config->method < 7)){
+  if (encode_config->method >= 0 && encode_config->method <= 6){
     config.method = encode_config->method;
   }
-  if (encode_config->segments && (encode_config->segments >= 1 && encode_config->segments < 5)){
+  if (encode_config->segments){
     config.segments = encode_config->segments;
   }
-  if (encode_config->sns_strength && (encode_config->sns_strength >= 0 && encode_config->sns_strength <= 100)){
+  if (encode_config->sns_strength){
     config.sns_strength = encode_config->sns_strength;
   }
-  if (encode_config->alpha_quality && (encode_config->alpha_quality >= 0 && encode_config->alpha_quality <= 100)){
+  if (encode_config->alpha_quality){
     config.alpha_quality = encode_config->alpha_quality;
+  }
+  if (encode_config->alpha_compression){
+    config.alpha_compression = encode_config->alpha_compression;
+  }
+  if (encode_config->alpha_filtering){
+    config.alpha_filtering = encode_config->alpha_filtering;
+  }
+  if (encode_config->width && encode_config->height){
+    picture.width = encode_config->width;
+    picture.height = encode_config->height;
   }
   
   if (!WebPPictureInit(&picture) ||
@@ -167,13 +177,29 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   picture.writer = EncodeWriter;
   picture.custom_ptr = (void*)out;
   
+  if ((encode_config->crop_w | encode_config->crop_h) > 0){
+    if (!WebPPictureView(&picture, encode_config->crop_x, encode_config->crop_y, encode_config->crop_w, encode_config->crop_h, &picture)) {
+      fprintf(stderr, "Error! Cannot crop picture\n");
+      return_value = 5;
+      goto Error;
+    }
+  }
+  
+  if ((encode_config->resize_w | encode_config->resize_h) > 0) {
+    if (!WebPPictureRescale(&picture, encode_config->resize_w, encode_config->resize_h)) {
+      fprintf(stderr, "Error! Cannot resize picture\n");
+      return_value = 6;
+      goto Error;
+    }
+  }
+  
   if (picture.extra_info_type > 0) {
     AllocExtraInfo(&picture);
   }
   
   if (!WebPEncode(&config, &picture)) {
     fprintf(stderr, "Error! Cannot encode picture as WebP\n");
-    return_value = 5;
+    return_value = 10;
     goto Error;
   }
   return_value = 0;
@@ -189,7 +215,7 @@ Error:
 }
 
 // test
-int test(int n) {
+int test_c(int n) {
   return n + 100;
 }
 
