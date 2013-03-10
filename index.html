@@ -94,7 +94,7 @@ sudo apt-get install libpng12-dev
 <pre><code>2.0.0p0 :001 &gt; require 'webp_ffi'
  =&gt; true
 2.0.0p0 :006 &gt; filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
-2.0.0p0 :007 &gt; WebpFfi.webp_size(data = File.open(filename, "rb").read)
+2.0.0p0 :007 &gt; WebpFfi.webp_size(File.open(filename, "rb").read)
  =&gt; [2000, 2353]
 </code></pre>
 
