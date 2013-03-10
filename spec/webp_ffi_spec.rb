@@ -88,6 +88,15 @@ describe WebpFfi do
         WebpFfi.encode(in_filename, out_filename)
       end
     end
+    factories[:jpg].each do |image|
+      it "#{image}.jpg image" do
+        out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
+        Dir.mkdir(out_dir) unless File.exists?(out_dir)
+        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.jpg"))
+        out_filename = File.expand_path(File.join(out_dir, "#{image}.jpg.webp"))
+        WebpFfi.encode(in_filename, out_filename)
+      end
+    end
   end
 
 end

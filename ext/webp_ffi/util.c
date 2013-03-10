@@ -9,6 +9,8 @@
 #include <setjmp.h>   // note: this must be included *after* png.h
 #include <jpeglib.h>
 
+#include <tiffio.h>
+
 #include "webp/decode.h"
 #include "webp/encode.h"
 
@@ -43,6 +45,88 @@ static int UtilReadYUV(FILE* in_file, WebPPicture* const pic) {
   if (use_argb) ok = WebPPictureYUVAToARGB(pic);
 
  End:
+  return ok;
+}
+
+struct my_error_mgr {
+  struct jpeg_error_mgr pub;
+  jmp_buf setjmp_buffer;
+};
+
+static void my_error_exit(j_common_ptr dinfo) {
+  struct my_error_mgr* myerr = (struct my_error_mgr*) dinfo->err;
+  (*dinfo->err->output_message) (dinfo);
+  longjmp(myerr->setjmp_buffer, 1);
+}
+
+static int UtilReadJPEG(FILE* in_file, WebPPicture* const pic) {
+  int ok = 0;
+  int stride, width, height;
+  uint8_t* rgb = NULL;
+  uint8_t* row_ptr = NULL;
+  struct jpeg_decompress_struct dinfo;
+  struct my_error_mgr jerr;
+  JSAMPARRAY buffer;
+
+  dinfo.err = jpeg_std_error(&jerr.pub);
+  jerr.pub.error_exit = my_error_exit;
+
+  if (setjmp(jerr.setjmp_buffer)) {
+ Error:
+    jpeg_destroy_decompress(&dinfo);
+    goto End;
+  }
+
+  jpeg_create_decompress(&dinfo);
+  jpeg_stdio_src(&dinfo, in_file);
+  jpeg_read_header(&dinfo, TRUE);
+
+  dinfo.out_color_space = JCS_RGB;
+  dinfo.dct_method = JDCT_IFAST;
+  dinfo.do_fancy_upsampling = TRUE;
+
+  jpeg_start_decompress(&dinfo);
+
+  if (dinfo.output_components != 3) {
+    goto Error;
+  }
+
+  width = dinfo.output_width;
+  height = dinfo.output_height;
+  stride = dinfo.output_width * dinfo.output_components * sizeof(*rgb);
+
+  rgb = (uint8_t*)malloc(stride * height);
+  if (rgb == NULL) {
+    goto End;
+  }
+  row_ptr = rgb;
+
+  buffer = (*dinfo.mem->alloc_sarray) ((j_common_ptr) &dinfo,
+                                       JPOOL_IMAGE, stride, 1);
+  if (buffer == NULL) {
+    goto End;
+  }
+
+  while (dinfo.output_scanline < dinfo.output_height) {
+    if (jpeg_read_scanlines(&dinfo, buffer, 1) != 1) {
+      goto End;
+    }
+    memcpy(row_ptr, buffer[0], stride);
+    row_ptr += stride;
+  }
+
+  jpeg_finish_decompress(&dinfo);
+  jpeg_destroy_decompress(&dinfo);
+
+  // WebP conversion.
+  pic->width = width;
+  pic->height = height;
+  ok = WebPPictureImportRGB(pic, rgb, stride);
+
+ End:
+  if (rgb) {
+    free(rgb);
+  }
   return ok;
 }
 
@@ -174,6 +258,57 @@ static int UtilWritePNG(FILE* out_file, const WebPDecBuffer* const buffer) {
   return 1;
 }
 
+static int UtilReadTIFF(const char* const filename,
+                    WebPPicture* const pic, int keep_alpha) {
+  TIFF* const tif = TIFFOpen(filename, "r");
+  uint32 width, height;
+  uint32* raster;
+  int ok = 0;
+  int dircount = 1;
+
+  if (tif == NULL) {
+    fprintf(stderr, "Error! Cannot open TIFF file '%s'\n", filename);
+    return 0;
+  }
+
+  while (TIFFReadDirectory(tif)) ++dircount;
+
+  if (dircount > 1) {
+    fprintf(stderr, "Warning: multi-directory TIFF files are not supported.\n"
+                    "Only the first will be used, %d will be ignored.\n",
+                    dircount - 1);
+  }
+
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
+  raster = (uint32*)_TIFFmalloc(width * height * sizeof(*raster));
+  if (raster != NULL) {
+    if (TIFFReadRGBAImageOriented(tif, width, height, raster,
+                                  ORIENTATION_TOPLEFT, 1)) {
+      const int stride = width * sizeof(*raster);
+      pic->width = width;
+      pic->height = height;
+      // TIFF data is ABGR
+#ifdef __BIG_ENDIAN__
+      TIFFSwabArrayOfLong(raster, width * height);
+#endif
+      ok = keep_alpha
+         ? WebPPictureImportRGBA(pic, (const uint8_t*)raster, stride)
+         : WebPPictureImportRGBX(pic, (const uint8_t*)raster, stride);
+    }
+    _TIFFfree(raster);
+  } else {
+    fprintf(stderr, "Error allocating TIFF RGBA memory!\n");
+  }
+
+  if (ok && keep_alpha == 2) {
+    WebPCleanupTransparentArea(pic);
+  }
+
+  TIFFClose(tif);
+  return ok;
+}
+
 static InputFileFormat GetImageType(FILE* in_file) {
   InputFileFormat format = UNSUPPORTED;
   unsigned int magic;
@@ -209,14 +344,11 @@ int UtilReadPicture(const char* const filename, WebPPicture* const pic,
     const InputFileFormat format = GetImageType(in_file);
     if (format == PNG_) {
       ok = UtilReadPNG(in_file, pic, keep_alpha);
-    }
-    /*
     } else if (format == JPEG_) {
-      ok = ReadJPEG(in_file, pic);
+      ok = UtilReadJPEG(in_file, pic);
     } else if (format == TIFF_) {
-      ok = ReadTIFF(filename, pic, keep_alpha);
+      ok = UtilReadTIFF(filename, pic, keep_alpha);
     }
-    */
   } else {
     // If image size is specified, infer it as YUV format.
     ok = UtilReadYUV(in_file, pic);

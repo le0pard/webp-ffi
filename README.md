@@ -13,16 +13,15 @@ First of all you should have install libraries: libpng, libjpeg and libwebp (for
 
 For ubuntu, debian:
 
-    sudo apt-get install libjpeg62-dev
-    sudo apt-get install libpng12-dev
+    sudo apt-get install libjpeg62-dev libpng12-dev libtiff4-dev
     
 For Mac OS:
 
-    sudo port install jpeg libpng
+    sudo port install jpeg libpng tiff
     
 or:
 
-    brew install libjpg libpng
+    brew install libjpg libpng libtiff
     
 Next, you should [install libwebp](https://developers.google.com/speed/webp/docs/compiling).
 

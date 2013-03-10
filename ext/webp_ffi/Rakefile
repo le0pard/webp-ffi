@@ -13,6 +13,7 @@ FFI::Compiler::CompileTask.new('webp_ffi') do |c|
   # libs
   c.have_library?('png')
   c.have_library?('jpeg')
+  c.have_library?('tiff')
   # compiler flags
   c.cflags << "-arch x86_64" if c.platform.mac?
   c.ldflags << "-arch x86_64" if c.platform.mac?
