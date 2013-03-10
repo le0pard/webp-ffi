@@ -30,7 +30,11 @@ void encoder_version(char *version) {
 }
 
 int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height) {
-  return WebPGetInfo(data, data_size, width, height);
+  if (WebPGetInfo(data, data_size, width, height) == 1) {
+    return 0;
+  } else {
+    return 1;
+  }
 }
 
 
