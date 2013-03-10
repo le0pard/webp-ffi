@@ -1,6 +1,5 @@
 #include "webp/decode.h"
 #include "webp/encode.h"
-#include "webp/types.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -13,6 +12,13 @@ typedef enum {
   PGM,
   ALPHA_PLANE_ONLY  // this is for experimenting only
 } OutputFileFormat;
+
+typedef enum {
+  PNG_ = 0,
+  JPEG_,
+  TIFF_,  // 'TIFF' clashes with libtiff
+  UNSUPPORTED
+} InputFileFormat;
 
 void UtilSaveOutput(const WebPDecBuffer* const buffer, OutputFileFormat format, const char* const out_file);
 // Allocates storage for entire file 'file_name' and returns contents and size

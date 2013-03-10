@@ -15,6 +15,18 @@
 extern "C" {
 #endif
 
+static int EncodeWriter(const uint8_t* data, size_t data_size,
+                    const WebPPicture* const pic) {
+  FILE* const out = (FILE*)pic->custom_ptr;
+  return data_size ? (fwrite(data, data_size, 1, out) == 1) : 1;
+}
+
+static void AllocExtraInfo(WebPPicture* const pic) {
+  const int mb_w = (pic->width + 15) / 16;
+  const int mb_h = (pic->height + 15) / 16;
+  pic->extra_info = (uint8_t*)malloc(mb_w * mb_h * sizeof(*pic->extra_info));
+}
+
 // main functions
 
 void decoder_version(char *version) {
@@ -47,7 +59,7 @@ int webp_decode(const char *in_file, const char *out_file) {
 
   if (!WebPInitDecoderConfig(&config)) {
     fprintf(stderr, "Library version mismatch!\n");
-    return -1;
+    return 1;
   }
   
   VP8StatusCode status = VP8_STATUS_OK;
@@ -60,7 +72,7 @@ int webp_decode(const char *in_file, const char *out_file) {
   if (status != VP8_STATUS_OK) {
     fprintf(stderr, "This is invalid webp image!\n");
     free((void*)data);
-    return -1;
+    return 2;
   }
   
   switch (format) {
@@ -81,18 +93,15 @@ int webp_decode(const char *in_file, const char *out_file) {
       break;
     default:
       free((void*)data);
-      return -1;
+      return 3;
   }
   status = WebPDecode(data, data_size, &config);
   
   free((void*)data);
   if (status != VP8_STATUS_OK) {
     fprintf(stderr, "Decoding of %s failed.\n", in_file);
-    return -1;
+    return 4;
   }
-  printf("Decoded %s. Dimensions: %d x %d%s. Now saving...\n", in_file,
-         output_buffer->width, output_buffer->height,
-         bitstream->has_alpha ? " (with alpha)" : "");
   UtilSaveOutput(output_buffer, format, out_file);
   WebPFreeDecBuffer(output_buffer);
   return 0;
@@ -100,26 +109,53 @@ int webp_decode(const char *in_file, const char *out_file) {
 
 
 
-int webp_encode(const uint8_t* data, size_t data_size, const FfiWebpConfig* ffi_config, uint8_t* output) {
-  int return_value = -1;
+int webp_encode(const char *in_file, const char *out_file) {
+  FILE *out = NULL;
+  int keep_alpha = 1;
   WebPPicture picture;
   WebPConfig config;
+  
+  
   if (!WebPPictureInit(&picture) ||
       !WebPConfigInit(&config)) {
     fprintf(stderr, "Error! Version mismatch!\n");
-    return -1;
+    return 1;
   }
-  
-  config.sns_strength = 90;
-  config.filter_sharpness = 6;
-  config.alpha_quality = 90;
   
   if (!WebPValidateConfig(&config)) {
     fprintf(stderr, "Error! Invalid configuration.\n");
-    return -1;
+    return 2;
   }
-  // NOT finished
-  return return_value;
+  
+  if (!UtilReadPicture(in_file, &picture, keep_alpha)) {
+    fprintf(stderr, "Error! Cannot read input picture file '%s'\n", in_file);
+    return 3;
+  }
+  
+  out = fopen(out_file, "wb");
+  if (out == NULL) {
+    fprintf(stderr, "Error! Cannot open output file '%s'\n", out_file);
+    return 5;
+  }
+  picture.writer = EncodeWriter;
+  picture.custom_ptr = (void*)out;
+  
+  if (picture.extra_info_type > 0) {
+    AllocExtraInfo(&picture);
+  }
+  
+  if (!WebPEncode(&config, &picture)) {
+    fprintf(stderr, "Error! Cannot encode picture as WebP\n");
+    return 4;
+  }
+  
+  free(picture.extra_info);
+  WebPPictureFree(&picture);
+  if (out != NULL) {
+    fclose(out);
+  }
+
+  return 0;
 }
 
 // test

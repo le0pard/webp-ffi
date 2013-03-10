@@ -37,20 +37,8 @@ module WebpFfi
     end
     
     # encode
-    def encode(data, options = {})
-      return nil if data.nil?
-      size = data.respond_to?(:bytesize) ? data.bytesize : data.size
-      options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpConfig.size, false
-      options_struct = C::FfiWebpConfig.new options_pointer
-      memBuf = FFI::MemoryPointer.new(:char, size)
-      memBuf.put_bytes(0, data)
-      output_pointer = FFI::MemoryPointer.new :pointer, 1
-      if C.webp_encode(memBuf, size, options_pointer, output_pointer) == 1
-        return output_pointer
-      else
-        #raise InvalidImageFormatError, "invalid webp image"
-        return nil
-      end
+    def encode(input_file, output_file, options = {})
+      C.webp_encode(input_file, output_file)
     end
     
   end

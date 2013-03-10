@@ -2,30 +2,31 @@ require 'spec_helper'
 
 describe WebpFfi do
   factories = {
-    webp: ["1.webp", "2.webp", "3.webp", "4.webp", "5.webp", "6.webp"],
-    images: ["1.png", "2.png", "3.png", "4.png", "5.jpg", "6.jpg"],
+    webp: ["1", "2", "3", "4", "5", "6"],
+    png: ["1", "2", "3", "4"],
+    jpg: ["5", "6"],
     info: {
-      "1.webp" => {
+      "1" => {
         size: [400, 301],
         has_alpha: true
       },
-      "2.webp" => {
+      "2" => {
         size: [386, 395],
         has_alpha: true
       },
-      "3.webp" => {
+      "3" => {
         size: [300, 300],
         has_alpha: true
       },
-      "4.webp" => {
+      "4" => {
         size: [2000, 2353],
         has_alpha: true
       },
-      "5.webp" => {
+      "5" => {
         size: [550, 368],
         has_alpha: false
       },
-      "6.webp" => {
+      "6" => {
         size: [1024, 772],
         has_alpha: false
       }
@@ -50,7 +51,7 @@ describe WebpFfi do
   context "webp_size" do
     factories[:webp].each do |image|
       it "#{image} image size == #{factories[:info][image][:size]}" do
-        filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
+        filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
         data = File.open(filename, "rb").read
         info = WebpFfi.webp_size(data)
         info.class.should == Array
@@ -67,22 +68,24 @@ describe WebpFfi do
   
   context "decode" do
     factories[:webp].each do |image|
-      it "#{image} image" do
+      it "#{image}.webp image" do
         out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
         Dir.mkdir(out_dir) unless File.exists?(out_dir)
-        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
-        out_filename = File.expand_path(File.join(out_dir, "#{image}.png"))
+        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
+        out_filename = File.expand_path(File.join(out_dir, "#{image}.webp.png"))
         WebpFfi.decode(in_filename, out_filename)
       end
     end
   end
   
   context "encode" do
-    factories[:images].each do |image|
-      it "#{image} image" do
-        filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
-        data = File.open(filename, "rb").read
-        output_data = WebpFfi.encode(data)
+    factories[:png].each do |image|
+      it "#{image}.png image" do
+        out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
+        Dir.mkdir(out_dir) unless File.exists?(out_dir)
+        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
+        out_filename = File.expand_path(File.join(out_dir, "#{image}.png.webp"))
+        WebpFfi.encode(in_filename, out_filename)
       end
     end
   end

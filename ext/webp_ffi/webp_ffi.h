@@ -15,7 +15,7 @@ extern "C" {
   void encoder_version(char *version);
   int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height);
   int webp_decode(const char *in_file, const char *out_file);
-  int webp_encode(const uint8_t* data, size_t data_size, const FfiWebpConfig* ffi_config, uint8_t* output);
+  int webp_encode(const char *in_file, const char *out_file);
   int test(int n);
 
 #if defined(__cplusplus) || defined(c_plusplus)
