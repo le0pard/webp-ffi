@@ -10,6 +10,8 @@ FFI::Compiler::CompileTask.new('webp_ffi') do |c|
   c.have_func?('WebPDecoderConfig')
   c.have_func?('WebPGetInfo')
   c.have_library?('webp')
+  # libs
+  c.have_library?('png')
   # compiler flags
   c.cflags << "-arch x86_64" if c.platform.mac?
   c.ldflags << "-arch x86_64" if c.platform.mac?

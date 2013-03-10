@@ -68,10 +68,11 @@ describe WebpFfi do
   context "decode" do
     factories[:webp].each do |image|
       it "#{image} image" do
-        filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
-        data = File.open(filename, "rb").read
-        output_data = WebpFfi.decode(data)
-        #File.open(File.expand_path(File.join(File.dirname(__FILE__), "../tmp/#{image}.png")), 'wb') {|f| f.write(output_data) }
+        out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
+        Dir.mkdir(out_dir) unless File.exists?(out_dir)
+        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
+        out_filename = File.expand_path(File.join(out_dir, "#{image}.png"))
+        WebpFfi.decode(in_filename, out_filename)
       end
     end
   end

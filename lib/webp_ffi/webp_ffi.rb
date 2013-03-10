@@ -32,16 +32,8 @@ module WebpFfi
     end
     
     # decode
-    def decode(data, options = {})
-      return nil if data.nil?
-      width, height = webp_size(data)
-      size = data.respond_to?(:bytesize) ? data.bytesize : data.size
-      memBuf = FFI::MemoryPointer.new(:char, size)
-      memBuf.put_bytes(0, data)
-      output_size = width * height * 4
-      output_pointer = FFI::MemoryPointer.new(:char, output_size)
-      C.webp_decode(memBuf, size, output_pointer)
-      output_pointer.null? ? nil : output_pointer.get_bytes(0, output_size)
+    def decode(input_file, output_file, options = {})
+      C.webp_decode(input_file, output_file)
     end
     
     # encode

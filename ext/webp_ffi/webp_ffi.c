@@ -10,31 +10,10 @@
 #include "./util.h"
 #include "./webp_ffi.h"
 
-#ifdef WEBP_HAVE_PNG
-#include <png.h>
-#endif
-
-#ifdef WEBP_HAVE_JPEG
-#include <setjmp.h>   // note: this must be included *after* png.h
-#include <jpeglib.h>
-#endif
-
-#ifdef WEBP_HAVE_TIFF
-#include <tiffio.h>
-#endif
-
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
-
-typedef enum {
-  PNG = 0,
-  PAM,
-  PPM,
-  PGM,
-  ALPHA_PLANE_ONLY  // this is for experimenting only
-} OutputFileFormat;
 
 // main functions
 
@@ -54,23 +33,29 @@ int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height
   return WebPGetInfo(data, data_size, width, height);
 }
 
-int webp_decode(const uint8_t* data, size_t data_size, uint8_t* output) {
-  int return_value = -1;
+
+
+int webp_decode(const char *in_file, const char *out_file) {
   WebPDecoderConfig config;
   WebPDecBuffer* const output_buffer = &config.output;
   WebPBitstreamFeatures* const bitstream = &config.input;
-  VP8StatusCode status = VP8_STATUS_OK;
   OutputFileFormat format = PNG;
-  int ok;
 
   if (!WebPInitDecoderConfig(&config)) {
     fprintf(stderr, "Library version mismatch!\n");
     return -1;
   }
   
+  VP8StatusCode status = VP8_STATUS_OK;
+  size_t data_size = 0;
+  const uint8_t* data = NULL;
+  
+  if (!UtilReadFile(in_file, &data, &data_size)) return -1;
+  
   status = WebPGetFeatures(data, data_size, bitstream);
   if (status != VP8_STATUS_OK) {
-    fprintf(stderr, "Library WebPGetFeatures problem!\n");
+    fprintf(stderr, "This is invalid webp image!\n");
+    free((void*)data);
     return -1;
   }
   
@@ -91,24 +76,25 @@ int webp_decode(const uint8_t* data, size_t data_size, uint8_t* output) {
       output_buffer->colorspace = MODE_YUVA;
       break;
     default:
+      free((void*)data);
       return -1;
   }
-  
-  int bufferSize = config.input.width * config.input.height * 4;
-  config.output.u.RGBA.stride = config.input.width * 4;
-  config.output.u.RGBA.size = bufferSize;
-  config.output.is_external_memory = 1;
-  config.output.u.RGBA.rgba = (uint8_t*)output;
-  
   status = WebPDecode(data, data_size, &config);
-  ok = (status == VP8_STATUS_OK);
-  if (!ok) {
-    fprintf(stderr, "Decoding failed, %i.\n", status);
+  
+  free((void*)data);
+  if (status != VP8_STATUS_OK) {
+    fprintf(stderr, "Decoding of %s failed.\n", in_file);
     return -1;
   }
+  printf("Decoded %s. Dimensions: %d x %d%s. Now saving...\n", in_file,
+         output_buffer->width, output_buffer->height,
+         bitstream->has_alpha ? " (with alpha)" : "");
+  UtilSaveOutput(output_buffer, format, out_file);
   WebPFreeDecBuffer(output_buffer);
-  return return_value;
+  return 0;
 }
+
+
 
 int webp_encode(const uint8_t* data, size_t data_size, const FfiWebpConfig* ffi_config, uint8_t* output) {
   int return_value = -1;
