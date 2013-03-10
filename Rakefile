@@ -17,6 +17,7 @@ namespace "ffi-compiler" do
     c.have_func?('WebPGetInfo')
     c.have_library?('webp')
     c.have_library?('png')
+    c.have_library?('jpeg')
     c.cflags << "-arch x86_64" if c.platform.mac?
     c.ldflags << "-arch x86_64" if c.platform.mac?
   end

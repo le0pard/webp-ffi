@@ -6,14 +6,8 @@
 
 #include <png.h>
 
-#ifdef WEBP_FFI_HAVE_JPEG
 #include <setjmp.h>   // note: this must be included *after* png.h
 #include <jpeglib.h>
-#endif
-
-#ifdef WEBP_FFI_HAVE_TIFF
-#include <tiffio.h>
-#endif
 
 #include "webp/decode.h"
 #include "webp/encode.h"

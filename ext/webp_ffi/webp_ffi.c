@@ -52,6 +52,7 @@ int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height
 
 
 int webp_decode(const char *in_file, const char *out_file) {
+  int return_value = -1;
   WebPDecoderConfig config;
   WebPDecBuffer* const output_buffer = &config.output;
   WebPBitstreamFeatures* const bitstream = &config.input;
@@ -71,8 +72,8 @@ int webp_decode(const char *in_file, const char *out_file) {
   status = WebPGetFeatures(data, data_size, bitstream);
   if (status != VP8_STATUS_OK) {
     fprintf(stderr, "This is invalid webp image!\n");
-    free((void*)data);
-    return 2;
+    return_value = 2;
+    goto Error;
   }
   
   switch (format) {
@@ -97,19 +98,24 @@ int webp_decode(const char *in_file, const char *out_file) {
   }
   status = WebPDecode(data, data_size, &config);
   
-  free((void*)data);
   if (status != VP8_STATUS_OK) {
     fprintf(stderr, "Decoding of %s failed.\n", in_file);
-    return 4;
+    return_value = 4;
+    goto Error;
   }
   UtilSaveOutput(output_buffer, format, out_file);
+  return_value = 0;
+  
+Error:  
+  free((void*)data);
   WebPFreeDecBuffer(output_buffer);
-  return 0;
+  return return_value;
 }
 
 
 
 int webp_encode(const char *in_file, const char *out_file) {
+  int return_value = -1;
   FILE *out = NULL;
   int keep_alpha = 1;
   WebPPicture picture;
@@ -124,18 +130,21 @@ int webp_encode(const char *in_file, const char *out_file) {
   
   if (!WebPValidateConfig(&config)) {
     fprintf(stderr, "Error! Invalid configuration.\n");
-    return 2;
+    return_value = 2;
+    goto Error;
   }
   
   if (!UtilReadPicture(in_file, &picture, keep_alpha)) {
     fprintf(stderr, "Error! Cannot read input picture file '%s'\n", in_file);
-    return 3;
+    return_value = 3;
+    goto Error;
   }
   
   out = fopen(out_file, "wb");
   if (out == NULL) {
     fprintf(stderr, "Error! Cannot open output file '%s'\n", out_file);
-    return 5;
+    return_value = 4;
+    goto Error;
   }
   picture.writer = EncodeWriter;
   picture.custom_ptr = (void*)out;
@@ -146,16 +155,19 @@ int webp_encode(const char *in_file, const char *out_file) {
   
   if (!WebPEncode(&config, &picture)) {
     fprintf(stderr, "Error! Cannot encode picture as WebP\n");
-    return 4;
+    return_value = 5;
+    goto Error;
   }
+  return_value = 0;
   
+Error:
   free(picture.extra_info);
   WebPPictureFree(&picture);
   if (out != NULL) {
     fclose(out);
   }
 
-  return 0;
+  return return_value;
 }
 
 // test
