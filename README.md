@@ -3,7 +3,11 @@
 [![Build Status](https://travis-ci.org/le0pard/webp-ffi.png)](https://travis-ci.org/le0pard/webp-ffi) 
 [![Code Climate](https://codeclimate.com/github/le0pard/webp-ffi.png)](https://codeclimate.com/github/le0pard/webp-ffi)
 
-Ruby wrapper for libwebp.
+Ruby wrapper for libwebp. What is web-p?
+
+WebP is a new image format that provides lossless and lossy compression for images on the web. WebP lossless images are 26% smaller in size compared to PNGs. WebP lossy images are 25-34% smaller in size compared to JPEG images at equivalent SSIM index. WebP supports lossless transparency (also known as alpha channel) with just 22% additional bytes. Transparency is also supported with lossy compression and typically provides 3x smaller file sizes compared to PNG when lossy compression is acceptable for the red/green/blue color channels.
+
+## [WebP Gallery](https://developers.google.com/speed/webp/gallery)
 
 ## Installation
 
