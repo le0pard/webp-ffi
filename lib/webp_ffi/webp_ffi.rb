@@ -31,17 +31,21 @@ module WebpFfi
       end
     end
     
-    # encode_rgb
-    def encode_rgb(data, options = {})
+    # decode
+    def decode(data, options = {})
       return nil if data.nil?
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size
       memBuf = FFI::MemoryPointer.new(:char, size)
       memBuf.put_bytes(0, data)
-      out_ptr = FFI::MemoryPointer.new(:pointer, 1)
-      C.webp_encode_rgb(memBuf, 100, 100, 1, 75, out_ptr)
-      out_ptr.null? ? nil : out_ptr.read_string()
+      output_pointer = FFI::MemoryPointer.new :char, size
+      output_pointer_size = FFI::MemoryPointer.new(:int, 8)
+      C.webp_decode(memBuf, size, output_pointer, output_pointer_size)
+      puts "Size: #{output_pointer_size.read_int}"
+      puts "P Size: #{output_pointer.size}"
+      output_pointer.null? ? nil : output_pointer.read_string()
     end
     
+    # encode
     def encode(data, options = {})
       return nil if data.nil?
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size

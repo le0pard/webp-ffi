@@ -28,6 +28,14 @@
 extern "C" {
 #endif
 
+typedef enum {
+  PNG = 0,
+  PAM,
+  PPM,
+  PGM,
+  ALPHA_PLANE_ONLY  // this is for experimenting only
+} OutputFileFormat;
+
 // main functions
 
 void decoder_version(char *version) {
@@ -46,11 +54,64 @@ int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height
   return WebPGetInfo(data, data_size, width, height);
 }
 
-size_t webp_encode_rgb(const uint8_t* rgb, int width, int height, int stride, float quality_factor, uint8_t** output) {
-  return WebPEncodeRGB(rgb, width, height, stride, quality_factor, output);
+int webp_decode(const uint8_t* data, size_t data_size, uint8_t* output, int* output_size) {
+  int return_value = -1;
+  WebPDecoderConfig config;
+  WebPDecBuffer* const output_buffer = &config.output;
+  WebPBitstreamFeatures* const bitstream = &config.input;
+  VP8StatusCode status = VP8_STATUS_OK;
+  OutputFileFormat format = PNG;
+  int ok;
+
+  if (!WebPInitDecoderConfig(&config)) {
+    fprintf(stderr, "Library version mismatch!\n");
+    return -1;
+  }
+  
+  status = WebPGetFeatures(data, data_size, bitstream);
+  if (status != VP8_STATUS_OK) {
+    fprintf(stderr, "Library WebPGetFeatures problem!\n");
+    return -1;
+  }
+  
+  switch (format) {
+    case PNG:
+      output_buffer->colorspace = bitstream->has_alpha ? MODE_RGBA : MODE_RGB;
+      break;
+    case PAM:
+      output_buffer->colorspace = MODE_RGBA;
+      break;
+    case PPM:
+      output_buffer->colorspace = MODE_RGB;  // drops alpha for PPM
+      break;
+    case PGM:
+      output_buffer->colorspace = bitstream->has_alpha ? MODE_YUVA : MODE_YUV;
+      break;
+    case ALPHA_PLANE_ONLY:
+      output_buffer->colorspace = MODE_YUVA;
+      break;
+    default:
+      return -1;
+  }
+
+  //config.output.u.RGBA.rgba = (uint8_t*)output;
+  //config.output.u.RGBA.size = output_size;
+  //config.output.is_external_memory = 1;
+  
+  status = WebPDecode(data, data_size, &config);
+  ok = (status == VP8_STATUS_OK);
+  if (!ok) {
+    fprintf(stderr, "Decoding failed, %i.\n", status);
+    return -1;
+  }
+  *output = config.output.u.RGBA.rgba;
+  *output_size = config.output.u.RGBA.size;
+  //WebPFreeDecBuffer(output_buffer);
+  // NOT finished
+  return return_value;
 }
 
-int webp_encode(const uint8_t* data, size_t data_size, const FfiWebpConfig* ffi_config, uint8_t** output) {
+int webp_encode(const uint8_t* data, size_t data_size, const FfiWebpConfig* ffi_config, uint8_t* output) {
   int return_value = -1;
   WebPPicture picture;
   WebPConfig config;

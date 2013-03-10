@@ -65,12 +65,12 @@ describe WebpFfi do
     end
   end
   
-  context "webp_encode_rgb" do
-    factories[:images].each do |image|
-      it "#{image} encode_rgb" do
+  context "decode" do
+    factories[:webp].each do |image|
+      it "#{image} image" do
         filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
         data = File.open(filename, "rb").read
-        output_data = WebpFfi.encode_rgb(data)
+        output_data = WebpFfi.decode(data)
       end
     end
   end
