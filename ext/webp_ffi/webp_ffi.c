@@ -54,7 +54,7 @@ int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height
   return WebPGetInfo(data, data_size, width, height);
 }
 
-int webp_decode(const uint8_t* data, size_t data_size, uint8_t* output, int* output_size) {
+int webp_decode(const uint8_t* data, size_t data_size, uint8_t* output) {
   int return_value = -1;
   WebPDecoderConfig config;
   WebPDecBuffer* const output_buffer = &config.output;
@@ -98,7 +98,7 @@ int webp_decode(const uint8_t* data, size_t data_size, uint8_t* output, int* out
   config.output.u.RGBA.stride = config.input.width * 4;
   config.output.u.RGBA.size = bufferSize;
   config.output.is_external_memory = 1;
-  config.output.u.RGBA.rgba = malloc(config.output.u.RGBA.stride * config.input.height);
+  config.output.u.RGBA.rgba = (uint8_t*)output;
   
   status = WebPDecode(data, data_size, &config);
   ok = (status == VP8_STATUS_OK);
@@ -106,8 +106,6 @@ int webp_decode(const uint8_t* data, size_t data_size, uint8_t* output, int* out
     fprintf(stderr, "Decoding failed, %i.\n", status);
     return -1;
   }
-  *output = config.output.u.RGBA.rgba;
-  *output_size = config.output.u.RGBA.size;
   WebPFreeDecBuffer(output_buffer);
   return return_value;
 }

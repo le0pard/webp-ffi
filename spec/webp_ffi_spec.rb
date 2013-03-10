@@ -71,7 +71,7 @@ describe WebpFfi do
         filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}"))
         data = File.open(filename, "rb").read
         output_data = WebpFfi.decode(data)
-        #File.open(File.expand_path(File.join(File.dirname(__FILE__), "factories/test.png")), 'w') {|f| f.write(output_data) }
+        File.open(File.expand_path(File.join(File.dirname(__FILE__), "../tmp/#{image}.png")), 'w') {|f| f.write(output_data) }
       end
     end
   end
