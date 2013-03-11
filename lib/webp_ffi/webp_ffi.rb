@@ -21,10 +21,9 @@ module WebpFfi
       return nil if data.nil?
       size = data.respond_to?(:bytesize) ? data.bytesize : data.size
       width_ptr, height_ptr = FFI::MemoryPointer.new(:int, 2), FFI::MemoryPointer.new(:int, 2)
-      memBuf = FFI::MemoryPointer.new(:char, size)
-      memBuf.put_bytes(0, data)
+      memBuf = FFI::MemoryPointer.new(:char, size).put_bytes(0, data)
       if 0 == C.webp_get_info(memBuf, size, width_ptr, height_ptr)
-        [width_ptr.null? ? nil : width_ptr.read_int, height_ptr.null? ? nil : height_ptr.read_int]
+        [(width_ptr.null? ? nil : width_ptr.read_int), (height_ptr.null? ? nil : height_ptr.read_int)]
       else
         raise InvalidImageFormatError, "invalid WebP image data"
       end
