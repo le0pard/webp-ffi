@@ -122,28 +122,50 @@ WebpFfi.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_
 <p>Possible encode options:</p>
 
 <ul>
-<li>lossless (int) - Lossless encoding (0=lossy(default), 1=lossless)</li>
-<li>quality (float) - between 0 (smallest file) and 100 (biggest)</li>
-<li>method (int) - quality/speed trade-off (0=fast, 6=slower-better)</li>
-<li>target_size (int) - if non-zero, set the desired target size in bytes. Takes precedence over the 'compression' parameter</li>
-<li>target_PSNR (float) - if non-zero, specifies the minimal distortion to try to achieve. Takes precedence over target_size</li>
-<li>segments (int) - maximum number of segments to use, in [1..4]</li>
-<li>sns_strength (int) - Spatial Noise Shaping. 0=off, 100=maximum</li>
-<li>filter_strength (int) - range: [0 = off .. 100 = strongest]</li>
-<li>filter_sharpness (int) - range: [0 = off .. 7 = least sharp]</li>
-<li>filter_type (int) - filtering type: 0 = simple, 1 = strong (only used if filter_strength &gt; 0 or autofilter &gt; 0)</li>
-<li>autofilter (int) - Auto adjust filter's strength [0 = off, 1 = on]</li>
-<li>alpha_compression (int) - Algorithm for encoding the alpha plane (0 = none, 1 = compressed with WebP lossless). Default is 1</li>
-<li>alpha_filtering (int) - Predictive filtering method for alpha plane. 0: none, 1: fast, 2: best. Default if 1</li>
-<li>alpha_quality (int) - Between 0 (smallest size) and 100 (lossless). Default is 100</li>
-<li>pass (int) - number of entropy-analysis passes (in [1..10])</li>
-<li>show_compressed (int) - if true, export the compressed picture back. In-loop filtering is not applied</li>
-<li>preprocessing (int) - preprocessing filter (0=none, 1=segment-smooth)</li>
-<li>partitions (int) - log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding</li>
-<li>partition_limit (int) - quality degradation allowed to fit the 512k limit on prediction modes coding (0: no degradation, 100: maximum possible degradation)</li>
-<li>width (int), height (int) - Input size (width x height) for YUV</li>
-<li>crop_x (int), crop_y (int), crop_w (int), crop_h (int) - crop picture with the given rectangle</li>
-<li>resize_w (int), resize_h (int) - resize picture (after any cropping)</li>
+<li>
+<strong>lossless</strong> (int) - Lossless encoding (0=lossy(default), 1=lossless)</li>
+<li>
+<strong>quality</strong> (float) - between 0 (smallest file) and 100 (biggest)</li>
+<li>
+<strong>method</strong> (int) - quality/speed trade-off (0=fast, 6=slower-better)</li>
+<li>
+<strong>target_size</strong> (int) - if non-zero, set the desired target size in bytes. Takes precedence over the 'compression' parameter</li>
+<li>
+<strong>target_PSNR</strong> (float) - if non-zero, specifies the minimal distortion to try to achieve. Takes precedence over target_size</li>
+<li>
+<strong>segments</strong> (int) - maximum number of segments to use, in [1..4]</li>
+<li>
+<strong>sns_strength</strong> (int) - Spatial Noise Shaping. 0=off, 100=maximum</li>
+<li>
+<strong>filter_strength</strong> (int) - range: [0 = off .. 100 = strongest]</li>
+<li>
+<strong>filter_sharpness</strong> (int) - range: [0 = off .. 7 = least sharp]</li>
+<li>
+<strong>filter_type</strong> (int) - filtering type: 0 = simple, 1 = strong (only used if filter_strength &gt; 0 or autofilter &gt; 0)</li>
+<li>
+<strong>autofilter</strong> (int) - Auto adjust filter's strength [0 = off, 1 = on]</li>
+<li>
+<strong>alpha_compression</strong> (int) - Algorithm for encoding the alpha plane (0 = none, 1 = compressed with WebP lossless). Default is 1</li>
+<li>
+<strong>alpha_filtering</strong> (int) - Predictive filtering method for alpha plane. 0: none, 1: fast, 2: best. Default if 1</li>
+<li>
+<strong>alpha_quality</strong> (int) - Between 0 (smallest size) and 100 (lossless). Default is 100</li>
+<li>
+<strong>pass</strong> (int) - number of entropy-analysis passes (in [1..10])</li>
+<li>
+<strong>show_compressed</strong> (int) - if true, export the compressed picture back. In-loop filtering is not applied</li>
+<li>
+<strong>preprocessing</strong> (int) - preprocessing filter (0=none, 1=segment-smooth)</li>
+<li>
+<strong>partitions</strong> (int) - log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding</li>
+<li>
+<strong>partition_limit</strong> (int) - quality degradation allowed to fit the 512k limit on prediction modes coding (0: no degradation, 100: maximum possible degradation)</li>
+<li>
+<strong>width</strong> (int), <strong>height</strong> (int) - Input size (width x height) for YUV</li>
+<li>
+<strong>crop_x</strong> (int), <strong>crop_y</strong> (int), <strong>crop_w</strong> (int), <strong>crop_h</strong> (int) - crop picture with the given rectangle</li>
+<li>
+<strong>resize_w</strong> (int), <strong>resize_h</strong> (int) - resize picture (after any cropping)</li>
 </ul><h2>Contributing</h2>
 
 <ol>
