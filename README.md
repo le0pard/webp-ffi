@@ -80,28 +80,28 @@ Encode png, jpg or tiff image to webp (with options):
     
 Possible encode options:
 
- * lossless (int) - Lossless encoding (0=lossy(default), 1=lossless)
- * quality (float) - between 0 (smallest file) and 100 (biggest)
- * method (int) - quality/speed trade-off (0=fast, 6=slower-better)
- * target\_size (int) - if non-zero, set the desired target size in bytes. Takes precedence over the 'compression' parameter
- * target\_PSNR (float) - if non-zero, specifies the minimal distortion to try to achieve. Takes precedence over target\_size
- * segments (int) - maximum number of segments to use, in [1..4]
- * sns_strength (int) - Spatial Noise Shaping. 0=off, 100=maximum
- * filter\_strength (int) - range: [0 = off .. 100 = strongest]
- * filter\_sharpness (int) - range: [0 = off .. 7 = least sharp]
- * filter\_type (int) - filtering type: 0 = simple, 1 = strong (only used if filter\_strength > 0 or autofilter > 0)
- * autofilter (int) - Auto adjust filter's strength [0 = off, 1 = on]
- * alpha\_compression (int) - Algorithm for encoding the alpha plane (0 = none, 1 = compressed with WebP lossless). Default is 1
- * alpha\_filtering (int) - Predictive filtering method for alpha plane. 0: none, 1: fast, 2: best. Default if 1
- * alpha\_quality (int) - Between 0 (smallest size) and 100 (lossless). Default is 100
- * pass (int) - number of entropy-analysis passes (in [1..10])
- * show\_compressed (int) - if true, export the compressed picture back. In-loop filtering is not applied
- * preprocessing (int) - preprocessing filter (0=none, 1=segment-smooth)
- * partitions (int) - log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding
- * partition\_limit (int) - quality degradation allowed to fit the 512k limit on prediction modes coding (0: no degradation, 100: maximum possible degradation)
- * width (int), height (int) - Input size (width x height) for YUV
- * crop\_x (int), crop\_y (int), crop\_w (int), crop\_h (int) - crop picture with the given rectangle
- * resize\_w (int), resize\_h (int) - resize picture (after any cropping)
+ * **lossless** (int) - Lossless encoding (0=lossy(default), 1=lossless)
+ * **quality** (float) - between 0 (smallest file) and 100 (biggest)
+ * **method** (int) - quality/speed trade-off (0=fast, 6=slower-better)
+ * **target\_size** (int) - if non-zero, set the desired target size in bytes. Takes precedence over the 'compression' parameter
+ * **target\_PSNR** (float) - if non-zero, specifies the minimal distortion to try to achieve. Takes precedence over target\_size
+ * **segments** (int) - maximum number of segments to use, in [1..4]
+ * **sns_strength** (int) - Spatial Noise Shaping. 0=off, 100=maximum
+ * **filter\_strength** (int) - range: [0 = off .. 100 = strongest]
+ * **filter\_sharpness** (int) - range: [0 = off .. 7 = least sharp]
+ * **filter\_type** (int) - filtering type: 0 = simple, 1 = strong (only used if filter\_strength > 0 or autofilter > 0)
+ * **autofilter** (int) - Auto adjust filter's strength [0 = off, 1 = on]
+ * **alpha\_compression** (int) - Algorithm for encoding the alpha plane (0 = none, 1 = compressed with WebP lossless). Default is 1
+ * **alpha\_filtering** (int) - Predictive filtering method for alpha plane. 0: none, 1: fast, 2: best. Default if 1
+ * **alpha\_quality** (int) - Between 0 (smallest size) and 100 (lossless). Default is 100
+ * **pass** (int) - number of entropy-analysis passes (in [1..10])
+ * **show\_compressed** (int) - if true, export the compressed picture back. In-loop filtering is not applied
+ * **preprocessing** (int) - preprocessing filter (0=none, 1=segment-smooth)
+ * **partitions** (int) - log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding
+ * **partition\_limit** (int) - quality degradation allowed to fit the 512k limit on prediction modes coding (0: no degradation, 100: maximum possible degradation)
+ * **width** (int), **height** (int) - Input size (width x height) for YUV
+ * **crop\_x** (int), **crop\_y** (int), **crop\_w** (int), **crop\_h** (int) - crop picture with the given rectangle
+ * **resize\_w** (int), **resize\_h** (int) - resize picture (after any cropping)
 
 ## Contributing
 
