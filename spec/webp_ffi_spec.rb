@@ -117,6 +117,16 @@ describe WebpFfi do
     end
   end
   
+  context "raise EncoderError on invalid crop options" do
+    factories[:png].each do |image|
+      it "#{image}.png image" do
+        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
+        out_filename = File.expand_path(File.join(@out_dir, "#{image}.50png.webp"))
+        expect { WebpFfi.encode(in_filename, out_filename, crop_w: 30000) }.to raise_error WebpFfi::EncoderError
+      end
+    end
+  end
+  
   context "decode" do
     factories[:webp].each do |image|
       it "#{image}.webp image" do

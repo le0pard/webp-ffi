@@ -14,10 +14,13 @@ module WebpFfi
       options_struct[:crop_w] = options_struct[:crop_h] = 0
       options_struct[:resize_w] = options_struct[:resize_h] = 0
       # users
-      [:lossless, :quality, :method, :segments, :sns_strength, 
-        :alpha_quality, :alpha_compression, :alpha_filtering, :width, :height,
-        :crop_x, :crop_y, :crop_w, :crop_h, :resize_w, :resize_h].each do |key|
-        options_struct[key] = @user_options[key] if @user_options[key]
+      [:lossless, :quality, :method, :target_size, :target_PSNR, 
+        :segments, :sns_strength, :filter_strength, :filter_sharpness, 
+        :filter_type, :autofilter, :alpha_compression, :alpha_filtering, 
+        :alpha_quality, :pass, :show_compressed, :preprocessing, :partitions, 
+        :partition_limit, :width, :height, :crop_x, :crop_y, :crop_w, 
+        :crop_h, :resize_w, :resize_h].each do |key|
+          options_struct[key] = @user_options[key] if @user_options[key]
       end
       options_pointer
     end

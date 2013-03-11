@@ -9,11 +9,35 @@ extern "C" {
     int lossless;           // Lossless encoding (0=lossy(default), 1=lossless).
     float quality;          // between 0 (smallest file) and 100 (biggest)
     int method;             // quality/speed trade-off (0=fast, 6=slower-better)
+
+    // Parameters related to lossy compression only:
+    int target_size;        // if non-zero, set the desired target size in bytes.
+                            // Takes precedence over the 'compression' parameter.
+    float target_PSNR;      // if non-zero, specifies the minimal distortion to
+                            // try to achieve. Takes precedence over target_size.
     int segments;           // maximum number of segments to use, in [1..4]
     int sns_strength;       // Spatial Noise Shaping. 0=off, 100=maximum.
-    int alpha_quality;      // Between 0 (smallest size) and 100 (lossless). Default is 100.
-    int alpha_compression;  // Algorithm for encoding the alpha plane
+    int filter_strength;    // range: [0 = off .. 100 = strongest]
+    int filter_sharpness;   // range: [0 = off .. 7 = least sharp]
+    int filter_type;        // filtering type: 0 = simple, 1 = strong (only used
+                            // if filter_strength > 0 or autofilter > 0)
+    int autofilter;         // Auto adjust filter's strength [0 = off, 1 = on]
+    int alpha_compression;  // Algorithm for encoding the alpha plane (0 = none,
+                            // 1 = compressed with WebP lossless). Default is 1.
     int alpha_filtering;    // Predictive filtering method for alpha plane.
+                            //  0: none, 1: fast, 2: best. Default if 1.
+    int alpha_quality;      // Between 0 (smallest size) and 100 (lossless).
+                            // Default is 100.
+    int pass;               // number of entropy-analysis passes (in [1..10]).
+
+    int show_compressed;    // if true, export the compressed picture back.
+                            // In-loop filtering is not applied.
+    int preprocessing;      // preprocessing filter (0=none, 1=segment-smooth)
+    int partitions;         // log2(number of token partitions) in [0..3]
+                            // Default is set to 0 for easier progressive decoding.
+    int partition_limit;    // quality degradation allowed to fit the 512k limit on
+                            // prediction modes coding (0: no degradation,
+                            // 100: maximum possible degradation).
     int width;
     int height;
     int crop_x;
@@ -23,6 +47,7 @@ extern "C" {
     int resize_w;
     int resize_h;
   } FfiWebpEncodeConfig;
+  
 
   void decoder_version(char *version);
   void encoder_version(char *version);

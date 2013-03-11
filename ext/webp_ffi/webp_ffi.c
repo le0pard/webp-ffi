@@ -58,31 +58,65 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   WebPPicture picture;
   WebPConfig config;
   // config
-  if (encode_config->lossless && (encode_config->lossless == 0 || encode_config->lossless == 1)){
+  if (encode_config->lossless == 0 || encode_config->lossless == 1){
     config.lossless = encode_config->lossless;
   }
-  if (encode_config->quality){
+  if (encode_config->quality >= 0 && encode_config->quality <= 100){
     config.quality = encode_config->quality;
   }
   if (encode_config->method >= 0 && encode_config->method <= 6){
     config.method = encode_config->method;
   }
-  if (encode_config->segments){
+  if (encode_config->target_size > 0){
+    config.target_size = encode_config->target_size;
+  }
+  if (encode_config->target_PSNR > 0){
+    config.target_PSNR = encode_config->target_PSNR;
+  }
+  if (encode_config->segments >= 0 && encode_config->segments <= 4){
     config.segments = encode_config->segments;
   }
-  if (encode_config->sns_strength){
+  if (encode_config->sns_strength >= 0 && encode_config->sns_strength <= 100){
     config.sns_strength = encode_config->sns_strength;
   }
-  if (encode_config->alpha_quality){
-    config.alpha_quality = encode_config->alpha_quality;
+  if (encode_config->filter_strength >= 0 && encode_config->filter_strength <= 100){
+    config.filter_strength = encode_config->filter_strength;
   }
-  if (encode_config->alpha_compression){
+  if (encode_config->filter_sharpness >= 0 && encode_config->filter_sharpness <= 7){
+    config.filter_sharpness = encode_config->filter_sharpness;
+  }
+  if (encode_config->filter_type == 0 || encode_config->filter_type == 1){
+    config.filter_type = encode_config->filter_type;
+  }
+  if (encode_config->autofilter == 0 || encode_config->autofilter == 1){
+    config.autofilter = encode_config->autofilter;
+  }
+  if (encode_config->alpha_compression == 0 || encode_config->alpha_compression == 1){
     config.alpha_compression = encode_config->alpha_compression;
   }
-  if (encode_config->alpha_filtering){
+  if (encode_config->alpha_filtering >= 0 && encode_config->alpha_filtering <= 2){
     config.alpha_filtering = encode_config->alpha_filtering;
   }
-  if (encode_config->width && encode_config->height){
+  if (encode_config->alpha_quality >= 0 && encode_config->alpha_quality <= 100){
+    config.alpha_quality = encode_config->alpha_quality;
+  }
+  if (encode_config->pass >= 0 && encode_config->pass <= 10){
+    config.pass = encode_config->pass;
+  }
+  if (encode_config->show_compressed >= 0){
+    config.show_compressed = encode_config->show_compressed;
+  }
+  if (encode_config->preprocessing == 0 || encode_config->preprocessing == 1){
+    config.preprocessing = encode_config->preprocessing;
+  }
+  if (encode_config->partitions >= 0 && encode_config->partitions <= 3){
+    config.partitions = encode_config->partitions;
+  }
+  if (encode_config->partition_limit >= 0 && encode_config->partition_limit <= 100){
+    config.partition_limit = encode_config->partition_limit;
+  }
+  
+  if ((encode_config->width | encode_config->height) > 0){
     picture.width = encode_config->width;
     picture.height = encode_config->height;
   }
