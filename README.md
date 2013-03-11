@@ -45,6 +45,8 @@ Or install it yourself as:
 
 ## Usage
 
+### Encode end Decoder versions
+
 Basic info about libwebp (encoder and decoder versions):
 
     $ irb
@@ -54,6 +56,8 @@ Basic info about libwebp (encoder and decoder versions):
      => "0.2.0" 
     2.0.0p0 :003 > WebpFfi.encoder_version
      => "0.2.0"
+
+### WebP size (width and height)
      
 Get size (width and height) from webp image:
 
@@ -61,11 +65,7 @@ Get size (width and height) from webp image:
     WebpFfi.webp_size(File.open(filename, "rb").read)
      => [2000, 2353]
     
-Decode webp image to png:
-
-    filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
-    out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
-    WebpFfi.decode(filename, out_filename)
+### Encode png, jpg or tiff image to WebP image
 
 Encode png, jpg or tiff image to webp:
 
@@ -102,6 +102,14 @@ Possible encode options:
  * **width** (int), **height** (int) - Input size (width x height) for YUV
  * **crop\_x** (int), **crop\_y** (int), **crop\_w** (int), **crop\_h** (int) - crop picture with the given rectangle
  * **resize\_w** (int), **resize\_h** (int) - resize picture (after any cropping)
+ 
+### Decode WebP image to png image
+
+Decode webp image to png:
+
+    filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
+    out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
+    WebpFfi.decode(filename, out_filename)
 
 ## Contributing
 
