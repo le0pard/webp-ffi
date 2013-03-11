@@ -81,6 +81,8 @@
 
 <h2>Usage</h2>
 
+<h3>Encode end Decoder versions</h3>
+
 <p>Basic info about libwebp (encoder and decoder versions):</p>
 
 <pre><code>$ irb
@@ -92,6 +94,8 @@
  =&gt; "0.2.0"
 </code></pre>
 
+<h3>WebP size (width and height)</h3>
+
 <p>Get size (width and height) from webp image:</p>
 
 <pre><code>filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
@@ -99,12 +103,7 @@ WebpFfi.webp_size(File.open(filename, "rb").read)
  =&gt; [2000, 2353]
 </code></pre>
 
-<p>Decode webp image to png:</p>
-
-<pre><code>filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
-out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
-WebpFfi.decode(filename, out_filename)
-</code></pre>
+<h3>Encode png, jpg or tiff image to WebP image</h3>
 
 <p>Encode png, jpg or tiff image to webp:</p>
 
@@ -166,7 +165,16 @@ WebpFfi.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_
 <strong>crop_x</strong> (int), <strong>crop_y</strong> (int), <strong>crop_w</strong> (int), <strong>crop_h</strong> (int) - crop picture with the given rectangle</li>
 <li>
 <strong>resize_w</strong> (int), <strong>resize_h</strong> (int) - resize picture (after any cropping)</li>
-</ul><h2>Contributing</h2>
+</ul><h3>Decode WebP image to png image</h3>
+
+<p>Decode webp image to png:</p>
+
+<pre><code>filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
+out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
+WebpFfi.decode(filename, out_filename)
+</code></pre>
+
+<h2>Contributing</h2>
 
 <ol>
 <li>Fork it</li>
