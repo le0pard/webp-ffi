@@ -366,7 +366,7 @@ int UtilSaveOutput(const WebPDecBuffer* const buffer,
   fout = fopen(out_file, "wb");
   if (!fout) {
     fprintf(stderr, "Error opening output file %s\n", out_file);
-    return;
+    return 0;
   }
 
   if (format == PNG) {
