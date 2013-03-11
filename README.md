@@ -52,9 +52,9 @@ Basic info about libwebp (encoder and decoder versions):
     $ irb
     2.0.0p0 :001 > require 'webp_ffi'
      => true 
-    2.0.0p0 :002 > WebpFfi.decoder_version
+    2.0.0p0 :002 > WebP.decoder_version
      => "0.2.0" 
-    2.0.0p0 :003 > WebpFfi.encoder_version
+    2.0.0p0 :003 > WebP.encoder_version
      => "0.2.0"
 
 ### WebP size (width and height)
@@ -62,7 +62,7 @@ Basic info about libwebp (encoder and decoder versions):
 Get size (width and height) from webp image:
 
     filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
-    WebpFfi.webp_size(File.open(filename, "rb").read)
+    WebP.webp_size(File.open(filename, "rb").read)
      => [2000, 2353]
     
 ### Encode png, jpg or tiff image to WebP image
@@ -71,12 +71,12 @@ Encode png, jpg or tiff image to webp:
 
     filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.png"))
     out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.webp"))
-    WebpFfi.encode(filename, out_filename)
+    WebP.encode(filename, out_filename)
      
 Encode png, jpg or tiff image to webp (with options):
 
-    WebpFfi.encode(filename, out_filename, quality: 50, resize_w: 100, resize_h: 200)
-    WebpFfi.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 100)
+    WebP.encode(filename, out_filename, quality: 50, resize_w: 100, resize_h: 200)
+    WebP.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 100)
     
 Possible encode options:
 
@@ -109,7 +109,7 @@ Decode webp image to png:
 
     filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
     out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
-    WebpFfi.decode(filename, out_filename)
+    WebP.decode(filename, out_filename)
 
 ## Contributing
 
