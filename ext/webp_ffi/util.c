@@ -267,7 +267,7 @@ static int UtilReadTIFF(const char* const filename,
   int dircount = 1;
 
   if (tif == NULL) {
-    fprintf(stderr, "Error! Cannot open TIFF file '%s'\n", filename);
+    //fprintf(stderr, "Error! Cannot open TIFF file '%s'\n", filename);
     return 0;
   }
 
@@ -298,7 +298,7 @@ static int UtilReadTIFF(const char* const filename,
     }
     _TIFFfree(raster);
   } else {
-    fprintf(stderr, "Error allocating TIFF RGBA memory!\n");
+    //fprintf(stderr, "Error allocating TIFF RGBA memory!\n");
   }
 
   if (ok && keep_alpha == 2) {
@@ -335,7 +335,7 @@ int UtilReadPicture(const char* const filename, WebPPicture* const pic,
   int ok = 0;
   FILE* in_file = fopen(filename, "rb");
   if (in_file == NULL) {
-    fprintf(stderr, "Error! Cannot open input file '%s'\n", filename);
+    //fprintf(stderr, "Error! Cannot open input file '%s'\n", filename);
     return ok;
   }
 
@@ -352,9 +352,6 @@ int UtilReadPicture(const char* const filename, WebPPicture* const pic,
   } else {
     // If image size is specified, infer it as YUV format.
     ok = UtilReadYUV(in_file, pic);
-  }
-  if (!ok) {
-    fprintf(stderr, "Error! Could not process file %s\n", filename);
   }
 
   fclose(in_file);

@@ -152,25 +152,25 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   
   if (!WebPPictureInit(&picture) ||
       !WebPConfigInit(&config)) {
-    fprintf(stderr, "Error! Version mismatch!\n");
+    //fprintf(stderr, "Error! Version mismatch!\n");
     return 1;
   }
   
   if (!WebPValidateConfig(&config)) {
-    fprintf(stderr, "Error! Invalid configuration.\n");
+    //fprintf(stderr, "Error! Invalid configuration.\n");
     return_value = 2;
     goto Error;
   }
   
   if (!UtilReadPicture(in_file, &picture, keep_alpha)) {
-    fprintf(stderr, "Error! Cannot read input picture file '%s'\n", in_file);
+    //fprintf(stderr, "Error! Cannot read input picture file '%s'\n", in_file);
     return_value = 3;
     goto Error;
   }
   
   out = fopen(out_file, "wb");
   if (out == NULL) {
-    fprintf(stderr, "Error! Cannot open output file '%s'\n", out_file);
+    //fprintf(stderr, "Error! Cannot open output file '%s'\n", out_file);
     return_value = 4;
     goto Error;
   }
@@ -179,7 +179,7 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   
   if ((encode_config->crop_w | encode_config->crop_h) > 0){
     if (!WebPPictureView(&picture, encode_config->crop_x, encode_config->crop_y, encode_config->crop_w, encode_config->crop_h, &picture)) {
-      fprintf(stderr, "Error! Cannot crop picture\n");
+      //fprintf(stderr, "Error! Cannot crop picture\n");
       return_value = 5;
       goto Error;
     }
@@ -187,7 +187,7 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   
   if ((encode_config->resize_w | encode_config->resize_h) > 0) {
     if (!WebPPictureRescale(&picture, encode_config->resize_w, encode_config->resize_h)) {
-      fprintf(stderr, "Error! Cannot resize picture\n");
+      //fprintf(stderr, "Error! Cannot resize picture\n");
       return_value = 6;
       goto Error;
     }
@@ -198,8 +198,8 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   }
   
   if (!WebPEncode(&config, &picture)) {
-    fprintf(stderr, "Error! Cannot encode picture as WebP\n");
-    return_value = 10;
+    //fprintf(stderr, "Error! Cannot encode picture as WebP\n");
+    return_value = 7;
     goto Error;
   }
   return_value = 0;

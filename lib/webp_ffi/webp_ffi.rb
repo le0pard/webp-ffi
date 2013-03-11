@@ -27,20 +27,21 @@ module WebpFfi
       if C.webp_get_info(memBuf, size, width_ptr, height_ptr) == 0
         [width_ptr.null? ? nil : width_ptr.read_int, height_ptr.null? ? nil : height_ptr.read_int]
       else
-        raise InvalidImageFormatError, "invalid webp image"
-        return nil
+        raise InvalidImageFormatError, "invalid WebP image"
       end
     end
     
     # decode
     def decode(input_file, output_file, options = {})
-      C.webp_decode(input_file, output_file)
+      res = C.webp_decode(input_file, output_file)
     end
     
     # encode
     def encode(input_file, output_file, options = {})
       options_obj = Options.new options
-      C.webp_encode(input_file, output_file, options_obj.encode_pointer)
+      res = C.webp_encode(input_file, output_file, options_obj.encode_pointer)
+      raise EncoderError, ENCODER_ERRORS[res - 1] unless 0 == res
+      return true
     end
     
   end

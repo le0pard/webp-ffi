@@ -109,6 +109,13 @@ describe WebpFfi do
         WebpFfi.encode(in_filename, out_filename)
       end
     end
+    factories[:webp].each do |image|
+      it "raise EncoderError on #{image}.webp image" do
+        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
+        out_filename = File.expand_path(File.join(@out_dir, "#{image}invalid.webp.png"))
+        expect { WebpFfi.encode(in_filename, out_filename) }.to raise_error WebpFfi::EncoderError
+      end
+    end
   end
   
   context "encode with options" do
