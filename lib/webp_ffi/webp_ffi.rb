@@ -27,17 +27,17 @@ module WebpFfi
       end
     end
     
-    # decode
-    def decode(input_file, output_file, options = {})
-      res = C.webp_decode(input_file, output_file)
-      return true
-    end
-    
     # encode
     def encode(input_file, output_file, options = {})
       options_obj = Options.new options
       res = C.webp_encode(input_file, output_file, options_obj.encode_pointer)
       raise EncoderError, ENCODER_ERRORS[res - 1] unless 0 == res
+      return true
+    end
+    
+    # decode
+    def decode(input_file, output_file, options = {})
+      res = C.webp_decode(input_file, output_file)
       return true
     end
     
