@@ -37,8 +37,13 @@ describe WebpFfi do
       }
     }
   }
+  
+  before :all do
+    @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
+    Dir.mkdir(@out_dir) unless File.exists?(@out_dir)
+  end
 
-  it "calculate plus 100 by test" do
+  it "calculate plus 100 by test_c (verify C)" do
     WebpFfi::C.test_c(100).should == 200
     WebpFfi::C.test_c(150).should == 250
   end
@@ -71,42 +76,26 @@ describe WebpFfi do
     end
   end
   
-  context "decode" do
-    factories[:webp].each do |image|
-      it "#{image}.webp image" do
-        out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
-        Dir.mkdir(out_dir) unless File.exists?(out_dir)
-        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
-        out_filename = File.expand_path(File.join(out_dir, "#{image}.webp.png"))
-        WebpFfi.decode(in_filename, out_filename)
-      end
-    end
-  end
-  
   context "encode" do
-    before :all do
-      @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
-      Dir.mkdir(@out_dir) unless File.exists?(@out_dir)
-    end
     factories[:png].each do |image|
       it "#{image}.png image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.png.webp"))
-        WebpFfi.encode(in_filename, out_filename)
+        WebpFfi.encode(in_filename, out_filename).should be_true
       end
     end
     factories[:jpg].each do |image|
       it "#{image}.jpg image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.jpg"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.jpg.webp"))
-        WebpFfi.encode(in_filename, out_filename)
+        WebpFfi.encode(in_filename, out_filename).should be_true
       end
     end
     factories[:tiff].each do |image|
       it "#{image}.tif image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.tif"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.tif.webp"))
-        WebpFfi.encode(in_filename, out_filename)
+        WebpFfi.encode(in_filename, out_filename).should be_true
       end
     end
     factories[:webp].each do |image|
@@ -119,15 +108,21 @@ describe WebpFfi do
   end
   
   context "encode with options" do
-    before :all do
-      @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
-      Dir.mkdir(@out_dir) unless File.exists?(@out_dir)
-    end
     factories[:png].each do |image|
       it "#{image}.png image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.50png.webp"))
         WebpFfi.encode(in_filename, out_filename, quality: 50)
+      end
+    end
+  end
+  
+  context "decode" do
+    factories[:webp].each do |image|
+      it "#{image}.webp image" do
+        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
+        out_filename = File.expand_path(File.join(@out_dir, "#{image}.webp.png"))
+        WebpFfi.decode(in_filename, out_filename).should be_true
       end
     end
   end

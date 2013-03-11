@@ -51,69 +51,6 @@ int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height
 
 
 
-int webp_decode(const char *in_file, const char *out_file) {
-  int return_value = -1;
-  WebPDecoderConfig config;
-  WebPDecBuffer* const output_buffer = &config.output;
-  WebPBitstreamFeatures* const bitstream = &config.input;
-  OutputFileFormat format = PNG;
-
-  if (!WebPInitDecoderConfig(&config)) {
-    fprintf(stderr, "Library version mismatch!\n");
-    return 1;
-  }
-  
-  VP8StatusCode status = VP8_STATUS_OK;
-  size_t data_size = 0;
-  const uint8_t* data = NULL;
-  
-  if (!UtilReadFile(in_file, &data, &data_size)) return -1;
-  
-  status = WebPGetFeatures(data, data_size, bitstream);
-  if (status != VP8_STATUS_OK) {
-    fprintf(stderr, "This is invalid webp image!\n");
-    return_value = 2;
-    goto Error;
-  }
-  
-  switch (format) {
-    case PNG:
-      output_buffer->colorspace = bitstream->has_alpha ? MODE_RGBA : MODE_RGB;
-      break;
-    case PAM:
-      output_buffer->colorspace = MODE_RGBA;
-      break;
-    case PPM:
-      output_buffer->colorspace = MODE_RGB;  // drops alpha for PPM
-      break;
-    case PGM:
-      output_buffer->colorspace = bitstream->has_alpha ? MODE_YUVA : MODE_YUV;
-      break;
-    case ALPHA_PLANE_ONLY:
-      output_buffer->colorspace = MODE_YUVA;
-      break;
-    default:
-      free((void*)data);
-      return 3;
-  }
-  status = WebPDecode(data, data_size, &config);
-  
-  if (status != VP8_STATUS_OK) {
-    fprintf(stderr, "Decoding of %s failed.\n", in_file);
-    return_value = 4;
-    goto Error;
-  }
-  UtilSaveOutput(output_buffer, format, out_file);
-  return_value = 0;
-  
-Error:  
-  free((void*)data);
-  WebPFreeDecBuffer(output_buffer);
-  return return_value;
-}
-
-
-
 int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeConfig *encode_config) {
   int return_value = -1;
   FILE *out = NULL;
@@ -213,6 +150,70 @@ Error:
 
   return return_value;
 }
+
+
+
+int webp_decode(const char *in_file, const char *out_file) {
+  int return_value = -1;
+  WebPDecoderConfig config;
+  WebPDecBuffer* const output_buffer = &config.output;
+  WebPBitstreamFeatures* const bitstream = &config.input;
+  OutputFileFormat format = PNG;
+
+  if (!WebPInitDecoderConfig(&config)) {
+    fprintf(stderr, "Library version mismatch!\n");
+    return 1;
+  }
+  
+  VP8StatusCode status = VP8_STATUS_OK;
+  size_t data_size = 0;
+  const uint8_t* data = NULL;
+  
+  if (!UtilReadFile(in_file, &data, &data_size)) return -1;
+  
+  status = WebPGetFeatures(data, data_size, bitstream);
+  if (status != VP8_STATUS_OK) {
+    fprintf(stderr, "This is invalid webp image!\n");
+    return_value = 2;
+    goto Error;
+  }
+  
+  switch (format) {
+    case PNG:
+      output_buffer->colorspace = bitstream->has_alpha ? MODE_RGBA : MODE_RGB;
+      break;
+    case PAM:
+      output_buffer->colorspace = MODE_RGBA;
+      break;
+    case PPM:
+      output_buffer->colorspace = MODE_RGB;  // drops alpha for PPM
+      break;
+    case PGM:
+      output_buffer->colorspace = bitstream->has_alpha ? MODE_YUVA : MODE_YUV;
+      break;
+    case ALPHA_PLANE_ONLY:
+      output_buffer->colorspace = MODE_YUVA;
+      break;
+    default:
+      free((void*)data);
+      return 3;
+  }
+  status = WebPDecode(data, data_size, &config);
+  
+  if (status != VP8_STATUS_OK) {
+    fprintf(stderr, "Decoding of %s failed.\n", in_file);
+    return_value = 4;
+    goto Error;
+  }
+  UtilSaveOutput(output_buffer, format, out_file);
+  return_value = 0;
+  
+Error:  
+  free((void*)data);
+  WebPFreeDecBuffer(output_buffer);
+  return return_value;
+}
+
 
 // test
 int test_c(int n) {

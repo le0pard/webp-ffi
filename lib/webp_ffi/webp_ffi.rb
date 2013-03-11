@@ -34,6 +34,7 @@ module WebpFfi
     # decode
     def decode(input_file, output_file, options = {})
       res = C.webp_decode(input_file, output_file)
+      return true
     end
     
     # encode
