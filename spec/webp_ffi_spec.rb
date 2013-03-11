@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe WebpFfi do
+describe WebP do
   factories = {
     webp: ["1", "2", "3", "4", "5", "6", "7"],
     png: ["1", "2", "3", "4"],
@@ -44,18 +44,18 @@ describe WebpFfi do
   end
 
   it "calculate plus 100 by test_c (verify C)" do
-    WebpFfi::C.test_c(100).should == 200
-    WebpFfi::C.test_c(150).should == 250
+    WebP::C.test_c(100).should == 200
+    WebP::C.test_c(150).should == 250
   end
   
   it "decoder version" do
-    WebpFfi.decoder_version.should_not be_nil
-    WebpFfi.decoder_version.should =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)$/
+    WebP.decoder_version.should_not be_nil
+    WebP.decoder_version.should =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)$/
   end
   
   it "encoder version" do
-    WebpFfi.encoder_version.should_not be_nil
-    WebpFfi.decoder_version.should =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)$/
+    WebP.encoder_version.should_not be_nil
+    WebP.decoder_version.should =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)$/
   end
   
   context "webp_size" do
@@ -63,7 +63,7 @@ describe WebpFfi do
       it "#{image} image size == #{factories[:info][image][:size]}" do
         filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
         data = File.open(filename, "rb").read
-        info = WebpFfi.webp_size(data)
+        info = WebP.webp_size(data)
         info.class.should == Array
         info.size.should == 2
         info.should == factories[:info][image][:size]
@@ -72,7 +72,7 @@ describe WebpFfi do
     it "raise InvalidImageFormatError for non-webp image" do
       filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/1.png"))
       data = File.open(filename, "rb").read
-      expect { WebpFfi.webp_size(data) }.to raise_error WebpFfi::InvalidImageFormatError
+      expect { WebP.webp_size(data) }.to raise_error WebP::InvalidImageFormatError
     end
   end
   
@@ -81,28 +81,28 @@ describe WebpFfi do
       it "#{image}.png image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.png.webp"))
-        WebpFfi.encode(in_filename, out_filename).should be_true
+        WebP.encode(in_filename, out_filename).should be_true
       end
     end
     factories[:jpg].each do |image|
       it "#{image}.jpg image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.jpg"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.jpg.webp"))
-        WebpFfi.encode(in_filename, out_filename).should be_true
+        WebP.encode(in_filename, out_filename).should be_true
       end
     end
     factories[:tiff].each do |image|
       it "#{image}.tif image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.tif"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.tif.webp"))
-        WebpFfi.encode(in_filename, out_filename).should be_true
+        WebP.encode(in_filename, out_filename).should be_true
       end
     end
     factories[:webp].each do |image|
       it "raise EncoderError on #{image}.webp image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}invalid.webp.png"))
-        expect { WebpFfi.encode(in_filename, out_filename) }.to raise_error WebpFfi::EncoderError
+        expect { WebP.encode(in_filename, out_filename) }.to raise_error WebP::EncoderError
       end
     end
   end
@@ -112,7 +112,7 @@ describe WebpFfi do
       it "#{image}.png image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.50png.webp"))
-        WebpFfi.encode(in_filename, out_filename, quality: 50)
+        WebP.encode(in_filename, out_filename, quality: 50)
       end
     end
   end
@@ -122,7 +122,7 @@ describe WebpFfi do
       it "#{image}.png image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.50png.webp"))
-        expect { WebpFfi.encode(in_filename, out_filename, crop_w: 30000) }.to raise_error WebpFfi::EncoderError
+        expect { WebP.encode(in_filename, out_filename, crop_w: 30000) }.to raise_error WebP::EncoderError
       end
     end
   end
@@ -132,7 +132,7 @@ describe WebpFfi do
       it "#{image}.webp image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.webp.png"))
-        WebpFfi.decode(in_filename, out_filename).should be_true
+        WebP.decode(in_filename, out_filename).should be_true
       end
     end
   end

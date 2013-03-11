@@ -1,4 +1,4 @@
-module WebpFfi
+module WebP
   class Options
     
     def initialize(options)

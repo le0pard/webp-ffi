@@ -1,7 +1,7 @@
-require "webp_ffi/options"
-require "webp_ffi/c"
+require "webp/options"
+require "webp/c"
 
-module WebpFfi
+module WebP
   class << self
     
     def decoder_version

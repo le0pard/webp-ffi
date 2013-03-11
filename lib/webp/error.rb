@@ -1,4 +1,4 @@
-module WebpFfi
+module WebP
   
   ENCODER_ERRORS = [
     "Version mismatch", 

@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'webp_ffi/version'
+require 'webp/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "webp-ffi"
-  spec.version       = WebpFfi::VERSION
+  spec.version       = WebP::VERSION
   spec.authors       = ["Alexey Vasyliev"]
   spec.email         = ["leopard.not.a@gmail.com"]
   spec.description   = %q{Ruby wrapper for libwebp}

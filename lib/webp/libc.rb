@@ -1,4 +1,4 @@
-module WebpFfi
+module WebP
   module LibC
     extend FFI::Library
     # figures out the correct libc for each platform including Windows

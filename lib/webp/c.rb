@@ -1,4 +1,4 @@
-module WebpFfi
+module WebP
   module C
     # struct
     class FfiWebpEncodeConfig < FFI::Struct
