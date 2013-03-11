@@ -1,3 +1,7 @@
+## v0.1.3
+
+* Rename module to WebP 
+
 ## v0.1.2
 
 * Added all possible encode options (also added this options in readme)
