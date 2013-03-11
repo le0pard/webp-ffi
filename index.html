@@ -119,7 +119,32 @@ WebpFfi.encode(filename, out_filename)
 WebpFfi.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 100)
 </code></pre>
 
-<h2>Contributing</h2>
+<p>Possible encode options:</p>
+
+<ul>
+<li>lossless (int) - Lossless encoding (0=lossy(default), 1=lossless)</li>
+<li>quality (float) - between 0 (smallest file) and 100 (biggest)</li>
+<li>method (int) - quality/speed trade-off (0=fast, 6=slower-better)</li>
+<li>target_size (int) - if non-zero, set the desired target size in bytes. Takes precedence over the 'compression' parameter</li>
+<li>target_PSNR (float) - if non-zero, specifies the minimal distortion to try to achieve. Takes precedence over target_size</li>
+<li>segments (int) - maximum number of segments to use, in [1..4]</li>
+<li>sns_strength (int) - Spatial Noise Shaping. 0=off, 100=maximum</li>
+<li>filter_strength (int) - range: [0 = off .. 100 = strongest]</li>
+<li>filter_sharpness (int) - range: [0 = off .. 7 = least sharp]</li>
+<li>filter_type (int) - filtering type: 0 = simple, 1 = strong (only used if filter_strength &gt; 0 or autofilter &gt; 0)</li>
+<li>autofilter (int) - Auto adjust filter's strength [0 = off, 1 = on]</li>
+<li>alpha_compression (int) - Algorithm for encoding the alpha plane (0 = none, 1 = compressed with WebP lossless). Default is 1</li>
+<li>alpha_filtering (int) - Predictive filtering method for alpha plane. 0: none, 1: fast, 2: best. Default if 1</li>
+<li>alpha_quality (int) - Between 0 (smallest size) and 100 (lossless). Default is 100</li>
+<li>pass (int) - number of entropy-analysis passes (in [1..10])</li>
+<li>show_compressed (int) - if true, export the compressed picture back. In-loop filtering is not applied</li>
+<li>preprocessing (int) - preprocessing filter (0=none, 1=segment-smooth)</li>
+<li>partitions (int) - log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding</li>
+<li>partition_limit (int) - quality degradation allowed to fit the 512k limit on prediction modes coding (0: no degradation, 100: maximum possible degradation)</li>
+<li>width (int), height (int) - Input size (width x height) for YUV</li>
+<li>crop_x (int), crop_y (int), crop_w (int), crop_h (int) - crop picture with the given rectangle</li>
+<li>resize_w (int), resize_h (int) - resize picture (after any cropping)</li>
+</ul><h2>Contributing</h2>
 
 <ol>
 <li>Fork it</li>
