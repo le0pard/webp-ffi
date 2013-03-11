@@ -45,7 +45,7 @@ Or install it yourself as:
 
 ## Usage
 
-### Encode end Decoder versions
+### Encoder end Decoder versions
 
 Basic info about libwebp (encoder and decoder versions):
 
