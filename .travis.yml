@@ -1,6 +1,6 @@
 language: ruby
 before_install:
-  - ./spec/travis_build.sh
+  - ./spec/travis_build.sh > /dev/null 2>&1
 rvm:
   - 1.9.2
   - 1.9.3
