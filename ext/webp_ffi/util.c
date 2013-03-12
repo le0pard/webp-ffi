@@ -427,7 +427,6 @@ int UtilReadFile(const char* const file_name,
   return 1;
 }
 
-
 #if defined(__cplusplus) || defined(c_plusplus)
 }    // extern "C"
 #endif
