@@ -25,6 +25,12 @@ module WebP
       options_pointer
     end
     
+    def decode_pointer
+      options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpDecodeConfig.size, false
+      options_struct = C::FfiWebpDecodeConfig.new options_pointer
+      options_pointer
+    end
+    
     private
 
     def encode_default(options_struct)

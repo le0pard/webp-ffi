@@ -8,6 +8,9 @@ module WebP
     "Cannot crop picture", 
     "Cannot resize picture",
     "Cannot encode picture as WebP"]
+    
+  DECODER_ERRORS = [
+    ""]
   
   class InvalidImageFormatError < StandardError; end
   class EncoderError < StandardError; end

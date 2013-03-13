@@ -37,7 +37,9 @@ module WebP
     
     # decode
     def decode(input_file, output_file, options = {})
-      res = C.webp_decode(input_file, output_file)
+      options_obj = Options.new options
+      res = C.webp_decode(input_file, output_file, options_obj.decode_pointer)
+      raise DecoderError, DECODER_ERRORS[res - 1] unless 0 == res
       return true
     end
     

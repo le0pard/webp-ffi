@@ -38,22 +38,26 @@ extern "C" {
     int partition_limit;    // quality degradation allowed to fit the 512k limit on
                             // prediction modes coding (0: no degradation,
                             // 100: maximum possible degradation).
-    int width;
-    int height;
-    int crop_x;
-    int crop_y;
-    int crop_w;
-    int crop_h;
-    int resize_w;
-    int resize_h;
+    int width, height;
+    int crop_x, crop_y, crop_w, crop_h;
+    int resize_w, resize_h;
   } FfiWebpEncodeConfig;
+  
+  typedef struct {
+    OutputFileFormat output_format;
+    int bypass_filtering;               // if true, skip the in-loop filtering
+    int no_fancy_upsampling;            // if true, use faster pointwise upsampler
+    int crop_x, crop_y, crop_w, crop_h;
+    int resize_w, resize_h;
+    int use_threads;                    // if true, use multi-threaded decoding
+  } FfiWebpDecodeConfig;
   
 
   void decoder_version(char *version);
   void encoder_version(char *version);
   int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height);
   int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeConfig *encode_config);
-  int webp_decode(const char *in_file, const char *out_file);
+  int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeConfig *decode_config);
   int test_c(int n);
 
 #if defined(__cplusplus) || defined(c_plusplus)

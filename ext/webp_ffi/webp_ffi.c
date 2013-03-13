@@ -187,7 +187,7 @@ Error:
 
 
 
-int webp_decode(const char *in_file, const char *out_file) {
+int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeConfig *decode_config) {
   int return_value = -1;
   WebPDecoderConfig config;
   WebPDecBuffer* const output_buffer = &config.output;
