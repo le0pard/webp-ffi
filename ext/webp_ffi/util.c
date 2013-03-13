@@ -258,6 +258,28 @@ static int UtilWritePNG(FILE* out_file, const WebPDecBuffer* const buffer) {
   return 1;
 }
 
+static int UtilWritePPM(FILE* fout, const WebPDecBuffer* const buffer, int alpha) {
+  const uint32_t width = buffer->width;
+  const uint32_t height = buffer->height;
+  const unsigned char* const rgb = buffer->u.RGBA.rgba;
+  const int stride = buffer->u.RGBA.stride;
+  const size_t bytes_per_px = alpha ? 4 : 3;
+  uint32_t y;
+
+  if (alpha) {
+    fprintf(fout, "P7\nWIDTH %d\nHEIGHT %d\nDEPTH 4\nMAXVAL 255\n"
+                  "TUPLTYPE RGB_ALPHA\nENDHDR\n", width, height);
+  } else {
+    fprintf(fout, "P6\n%d %d\n255\n", width, height);
+  }
+  for (y = 0; y < height; ++y) {
+    if (fwrite(rgb + y * stride, width, bytes_per_px, fout) != bytes_per_px) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
 static int UtilReadTIFF(const char* const filename,
                     WebPPicture* const pic, int keep_alpha) {
   TIFF* const tif = TIFFOpen(filename, "r");
@@ -371,12 +393,12 @@ int UtilSaveOutput(const WebPDecBuffer* const buffer,
 
   if (format == PNG) {
     ok &= UtilWritePNG(fout, buffer);
+  } else if (format == PAM) {
+    ok &= UtilWritePPM(fout, buffer, 1);
+  } else if (format == PPM) {
+    ok &= UtilWritePPM(fout, buffer, 0);
   }
   /*
-  } else if (format == PAM) {
-    ok &= WritePPM(fout, buffer, 1);
-  } else if (format == PPM) {
-    ok &= WritePPM(fout, buffer, 0);
   } else if (format == PGM) {
     ok &= WritePGM(fout, buffer);
   } else if (format == ALPHA_PLANE_ONLY) {

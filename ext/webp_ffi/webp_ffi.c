@@ -199,6 +199,10 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
     return 1;
   }
   
+  if (decode_config->output_format != format){
+    format = decode_config->output_format;
+  }
+  
   VP8StatusCode status = VP8_STATUS_OK;
   size_t data_size = 0;
   const uint8_t* data = NULL;

@@ -8,7 +8,6 @@ module WebP
     def encode_pointer
       options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpEncodeConfig.size, false
       options_struct = C::FfiWebpEncodeConfig.new options_pointer
-      # default
       [:lossless, :method, :target_size, :target_PSNR, :segments, 
         :sns_strength, :filter_strength, :filter_sharpness, 
         :filter_type, :autofilter, :alpha_compression, :alpha_filtering, 
@@ -17,7 +16,6 @@ module WebP
           options_struct[key] = @user_options[key] ? @user_options[key] : -1
       end
       encode_default(options_struct)
-      # users
       [:quality, :crop_x, :crop_y, :crop_w, 
         :crop_h, :resize_w, :resize_h].each do |key|
           options_struct[key] = @user_options[key] if @user_options[key]
@@ -28,6 +26,11 @@ module WebP
     def decode_pointer
       options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpDecodeConfig.size, false
       options_struct = C::FfiWebpDecodeConfig.new options_pointer
+      decode_default(options_struct)
+      # options
+      if @user_options[:output_format] && [:png, :pam, :ppm, :pgm, :alpha_plane_only].include?(@user_options[:output_format])
+        options_struct[:output_format] = C::OutputFileFormat[@user_options[:output_format]]
+      end
       options_pointer
     end
     
@@ -38,6 +41,10 @@ module WebP
       options_struct[:crop_x] = options_struct[:crop_y] = 0
       options_struct[:crop_w] = options_struct[:crop_h] = 0
       options_struct[:resize_w] = options_struct[:resize_h] = 0
+    end
+    
+    def decode_default(options_struct)
+      options_struct[:output_format] = C::OutputFileFormat[:png]
     end
 
   end

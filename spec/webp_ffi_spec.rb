@@ -136,5 +136,17 @@ describe WebP do
       end
     end
   end
+  
+  context "decode with output_format" do
+    [:pam, :ppm].each do |output_format|
+      factories[:webp].each do |image|
+        it "#{image}.webp image to #{output_format}" do
+          in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
+          out_filename = File.expand_path(File.join(@out_dir, "#{image}.#{output_format}.png"))
+          WebP.decode(in_filename, out_filename, output_format: output_format).should be_true
+        end
+      end
+    end
+  end
 
 end

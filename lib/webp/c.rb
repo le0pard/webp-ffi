@@ -1,7 +1,7 @@
 module WebP
   module C
     # enum
-    OutputFileFormat = enum( :png, 1,
+    OutputFileFormat = enum( :png, 0,
                   :pam,
                   :ppm,
                   :pgm,
