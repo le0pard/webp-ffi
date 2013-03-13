@@ -10,7 +10,10 @@ module WebP
     "Cannot encode picture as WebP"]
     
   DECODER_ERRORS = [
-    ""]
+    "Version mismatch", 
+    "Invalid webp image", 
+    "Invalid output format",
+    "Decoding failed"]
   
   class InvalidImageFormatError < StandardError; end
   class EncoderError < StandardError; end

@@ -65,7 +65,7 @@ Get size (width and height) from webp image:
     WebP.webp_size(File.open(filename, "rb").read)
      => [2000, 2353]
     
-### Encode png, jpg or tiff image to WebP image
+### Encode WebP image
 
 Encode png, jpg or tiff image to webp:
 
@@ -73,7 +73,7 @@ Encode png, jpg or tiff image to webp:
     out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.webp"))
     WebP.encode(filename, out_filename)
      
-Encode png, jpg or tiff image to webp (with options):
+Encode png, jpg or tiff image to webp with options:
 
     WebP.encode(filename, out_filename, quality: 50, resize_w: 100, resize_h: 200)
     WebP.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 100)
@@ -103,13 +103,34 @@ Possible encode options:
  * **crop\_x** (int), **crop\_y** (int), **crop\_w** (int), **crop\_h** (int) - crop picture with the given rectangle
  * **resize\_w** (int), **resize\_h** (int) - resize picture (after any cropping)
  
-### Decode WebP image to png image
+### Decode WebP image
 
-Decode webp image to png:
+Decode webp image (default format is png):
 
     filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
     out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
     WebP.decode(filename, out_filename)
+    
+Decode webp image to pam, ppm or pgm format of image:
+
+    filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
+    out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
+    WebP.decode(filename, out_filename, output_format: :pam)
+    WebP.decode(filename, out_filename, output_format: :ppm)
+    WebP.decode(filename, out_filename, output_format: :pgm)
+    
+Decode webp image with options:
+
+    WebP.encode(filename, out_filename, resize_w: 100, resize_h: 200)
+    WebP.encode(filename, out_filename, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 100)
+    
+Possible decode options:
+
+ * **bypass\_filtering** (bool) - disable in-loop filtering
+ * **no\_fancy\_upsampling** (bool) - don't use the fancy YUV420 upscaler
+ * **use\_threads** (bool) - use multi-threading
+ * **crop\_x** (int), **crop\_y** (int), **crop\_w** (int), **crop\_h** (int) - crop picture with the given rectangle
+ * **resize\_w** (int), **resize\_h** (int) - resize picture (after any cropping)
 
 ## Contributing
 

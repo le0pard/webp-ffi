@@ -280,6 +280,52 @@ static int UtilWritePPM(FILE* fout, const WebPDecBuffer* const buffer, int alpha
   return 1;
 }
 
+static int UtilWriteAlphaPlane(FILE* fout, const WebPDecBuffer* const buffer) {
+  const uint32_t width = buffer->width;
+  const uint32_t height = buffer->height;
+  const unsigned char* const a = buffer->u.YUVA.a;
+  const int a_stride = buffer->u.YUVA.a_stride;
+  uint32_t y;
+  assert(a != NULL);
+  fprintf(fout, "P5\n%d %d\n255\n", width, height);
+  for (y = 0; y < height; ++y) {
+    if (fwrite(a + y * a_stride, width, 1, fout) != 1) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+static int UtilWritePGM(FILE* fout, const WebPDecBuffer* const buffer) {
+  const int width = buffer->width;
+  const int height = buffer->height;
+  const WebPYUVABuffer* const yuv = &buffer->u.YUVA;
+  // Save a grayscale PGM file using the IMC4 layout
+  // (http://www.fourcc.org/yuv.php#IMC4). This is a very
+  // convenient format for viewing the samples, esp. for
+  // odd dimensions.
+  int ok = 1;
+  int y;
+  const int uv_width = (width + 1) / 2;
+  const int uv_height = (height + 1) / 2;
+  const int out_stride = (width + 1) & ~1;
+  const int a_height = yuv->a ? height : 0;
+  fprintf(fout, "P5\n%d %d\n255\n", out_stride, height + uv_height + a_height);
+  for (y = 0; ok && y < height; ++y) {
+    ok &= (fwrite(yuv->y + y * yuv->y_stride, width, 1, fout) == 1);
+    if (width & 1) fputc(0, fout);    // padding byte
+  }
+  for (y = 0; ok && y < uv_height; ++y) {
+    ok &= (fwrite(yuv->u + y * yuv->u_stride, uv_width, 1, fout) == 1);
+    ok &= (fwrite(yuv->v + y * yuv->v_stride, uv_width, 1, fout) == 1);
+  }
+  for (y = 0; ok && y < a_height; ++y) {
+    ok &= (fwrite(yuv->a + y * yuv->a_stride, width, 1, fout) == 1);
+    if (width & 1) fputc(0, fout);    // padding byte
+  }
+  return ok;
+}
+
 static int UtilReadTIFF(const char* const filename,
                     WebPPicture* const pic, int keep_alpha) {
   TIFF* const tif = TIFFOpen(filename, "r");
@@ -397,14 +443,12 @@ int UtilSaveOutput(const WebPDecBuffer* const buffer,
     ok &= UtilWritePPM(fout, buffer, 1);
   } else if (format == PPM) {
     ok &= UtilWritePPM(fout, buffer, 0);
-  }
-  /*
   } else if (format == PGM) {
-    ok &= WritePGM(fout, buffer);
+    ok &= UtilWritePGM(fout, buffer);
   } else if (format == ALPHA_PLANE_ONLY) {
-    ok &= WriteAlphaPlane(fout, buffer);
+    ok &= UtilWriteAlphaPlane(fout, buffer);
   }
-  */
+
   if (fout) {
     fclose(fout);
   }

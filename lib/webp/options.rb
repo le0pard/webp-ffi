@@ -31,6 +31,13 @@ module WebP
       if @user_options[:output_format] && [:png, :pam, :ppm, :pgm, :alpha_plane_only].include?(@user_options[:output_format])
         options_struct[:output_format] = C::OutputFileFormat[@user_options[:output_format]]
       end
+      [:bypass_filtering, :no_fancy_upsampling, :use_threads].each do |key|
+        options_struct[key] = 1 if @user_options[key] && true == @user_options[key]
+      end
+      [:crop_x, :crop_y, :crop_w, 
+        :crop_h, :resize_w, :resize_h].each do |key|
+          options_struct[key] = @user_options[key] if @user_options[key]
+      end
       options_pointer
     end
     
@@ -38,13 +45,19 @@ module WebP
 
     def encode_default(options_struct)
       options_struct[:quality] = 100
-      options_struct[:crop_x] = options_struct[:crop_y] = 0
-      options_struct[:crop_w] = options_struct[:crop_h] = 0
-      options_struct[:resize_w] = options_struct[:resize_h] = 0
+      similar_default(options_struct)
     end
     
     def decode_default(options_struct)
+      # default format is png
       options_struct[:output_format] = C::OutputFileFormat[:png]
+      similar_default(options_struct)
+    end
+    
+    def similar_default(options_struct)
+      options_struct[:crop_x] = options_struct[:crop_y] = 0
+      options_struct[:crop_w] = options_struct[:crop_h] = 0
+      options_struct[:resize_w] = options_struct[:resize_h] = 0
     end
 
   end

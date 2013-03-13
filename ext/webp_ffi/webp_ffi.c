@@ -195,12 +195,33 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
   OutputFileFormat format = PNG;
 
   if (!WebPInitDecoderConfig(&config)) {
-    fprintf(stderr, "Library version mismatch!\n");
+    //fprintf(stderr, "Library version mismatch!\n");
     return 1;
   }
   
   if (decode_config->output_format != format){
     format = decode_config->output_format;
+  }
+  if (decode_config->no_fancy_upsampling > 0){
+    config.options.no_fancy_upsampling = 1;
+  }
+  if (decode_config->bypass_filtering > 0){
+    config.options.bypass_filtering = 1;
+  }
+  if (decode_config->use_threads > 0){
+    config.options.use_threads = 1;
+  }
+  if ((decode_config->crop_w | decode_config->crop_h) > 0){
+    config.options.use_cropping = 1;
+    config.options.crop_left   = decode_config->crop_x;
+    config.options.crop_top    = decode_config->crop_y;
+    config.options.crop_width  = decode_config->crop_w;
+    config.options.crop_height = decode_config->crop_h;
+  }
+  if ((decode_config->resize_w | decode_config->resize_h) > 0){
+    config.options.use_scaling = 1;
+    config.options.scaled_width  = decode_config->resize_w;
+    config.options.scaled_height = decode_config->resize_h;
   }
   
   VP8StatusCode status = VP8_STATUS_OK;
@@ -211,7 +232,7 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
   
   status = WebPGetFeatures(data, data_size, bitstream);
   if (status != VP8_STATUS_OK) {
-    fprintf(stderr, "This is invalid webp image!\n");
+    //fprintf(stderr, "This is invalid webp image!\n");
     return_value = 2;
     goto Error;
   }
@@ -239,7 +260,7 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
   status = WebPDecode(data, data_size, &config);
   
   if (status != VP8_STATUS_OK) {
-    fprintf(stderr, "Decoding of %s failed.\n", in_file);
+    //fprintf(stderr, "Decoding of %s failed.\n", in_file);
     return_value = 4;
     goto Error;
   }
