@@ -1,10 +1,15 @@
+## v0.1.4
+
+* Added decode options
+* Added error class for decode errors
+
 ## v0.1.3
 
 * Rename module to WebP 
 
 ## v0.1.2
 
-* Added all possible encode options (also added this options in readme)
+* Added encode options
 * Added error class for encode errors
 
 ## v0.1.1
