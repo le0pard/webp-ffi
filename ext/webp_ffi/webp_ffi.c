@@ -57,7 +57,7 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   int keep_alpha = 1;
   WebPPicture picture;
   WebPConfig config;
-  // config
+  // OPTIONS BEGIN
   if (encode_config->lossless == 0 || encode_config->lossless == 1){
     config.lossless = encode_config->lossless;
   }
@@ -115,11 +115,11 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   if (encode_config->partition_limit >= 0 && encode_config->partition_limit <= 100){
     config.partition_limit = encode_config->partition_limit;
   }
-  
   if ((encode_config->width | encode_config->height) > 0){
     picture.width = encode_config->width;
     picture.height = encode_config->height;
   }
+  // OPTIONS END
   
   if (!WebPPictureInit(&picture) ||
       !WebPConfigInit(&config)) {

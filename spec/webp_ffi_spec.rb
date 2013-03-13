@@ -112,7 +112,7 @@ describe WebP do
       it "#{image}.png image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.50png.webp"))
-        WebP.encode(in_filename, out_filename, quality: 50)
+        WebP.encode(in_filename, out_filename, quality: 50, method: 0, alpha_quality: 10, alpha_compression: 1)
       end
     end
   end
@@ -121,7 +121,7 @@ describe WebP do
     factories[:png].each do |image|
       it "#{image}.png image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
-        out_filename = File.expand_path(File.join(@out_dir, "#{image}.50png.webp"))
+        out_filename = File.expand_path(File.join(@out_dir, "#{image}.invpng.webp"))
         expect { WebP.encode(in_filename, out_filename, crop_w: 30000) }.to raise_error WebP::EncoderError
       end
     end
