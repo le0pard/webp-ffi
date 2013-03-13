@@ -1,3 +1,7 @@
+## v0.1.5
+
+* Code cleanup
+
 ## v0.1.4
 
 * Added decode options
