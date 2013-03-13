@@ -29,18 +29,18 @@ module WebP
     
     # encode
     def encode(input_file, output_file, options = {})
-      unless 0 == (res = C.webp_encode(input_file, output_file, init_options_object(options).encode_pointer))
-        raise EncoderError, ENCODER_ERRORS[res - 1]
+      unless 0 == (encode_res = C.webp_encode(input_file, output_file, init_options_object(options).encode_pointer))
+        raise EncoderError, ENCODER_ERRORS[encode_res - 1]
       end
-      return true
+      true
     end
     
     # decode
     def decode(input_file, output_file, options = {})
-      unless 0 == (res = C.webp_decode(input_file, output_file, init_options_object(options).decode_pointer))
-        raise DecoderError, DECODER_ERRORS[res - 1]
+      unless 0 == (decode_res = C.webp_decode(input_file, output_file, init_options_object(options).decode_pointer))
+        raise DecoderError, DECODER_ERRORS[decode_res - 1]
       end
-      return true
+      true
     end
     
     private
