@@ -29,17 +29,17 @@ module WebP
     
     # encode
     def encode(input_file, output_file, options = {})
-      options_obj = Options.new options
-      res = C.webp_encode(input_file, output_file, options_obj.encode_pointer)
-      raise EncoderError, ENCODER_ERRORS[res - 1] unless 0 == res
+      unless 0 == (res = C.webp_encode(input_file, output_file, init_options_object(options).encode_pointer))
+        raise EncoderError, ENCODER_ERRORS[res - 1]
+      end
       return true
     end
     
     # decode
     def decode(input_file, output_file, options = {})
-      options_obj = Options.new options
-      res = C.webp_decode(input_file, output_file, options_obj.decode_pointer)
-      raise DecoderError, DECODER_ERRORS[res - 1] unless 0 == res
+      unless 0 == (res = C.webp_decode(input_file, output_file, init_options_object(options).decode_pointer))
+        raise DecoderError, DECODER_ERRORS[res - 1]
+      end
       return true
     end
     
@@ -51,6 +51,10 @@ module WebP
       pointers[:width], pointers[:height] = FFI::MemoryPointer.new(:int, 2), FFI::MemoryPointer.new(:int, 2)
       pointers[:data] = FFI::MemoryPointer.new(:char, pointers[:data_size]).put_bytes(0, data)
       pointers
+    end
+    
+    def init_options_object(options)
+      Options.new options
     end
     
   end

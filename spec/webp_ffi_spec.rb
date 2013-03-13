@@ -117,7 +117,7 @@ describe WebP do
         it "#{image}.png image" do
           in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
           out_filename = File.expand_path(File.join(@out_dir, "#{image}.invpng.webp"))
-          expect { WebP.encode(in_filename, out_filename, crop_w: 30000) }.to raise_error WebP::EncoderError
+          expect { WebP.encode(in_filename, out_filename, crop_w: 30000) }.to raise_error WebP::EncoderError, /crop/i
         end
       end
     end
@@ -161,16 +161,16 @@ describe WebP do
         it "#{image}.png image" do
           in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
           out_filename = File.expand_path(File.join(@out_dir, "#{image}.invpng.webp"))
-          expect { WebP.decode(in_filename, out_filename) }.to raise_error WebP::DecoderError
+          expect { WebP.decode(in_filename, out_filename) }.to raise_error WebP::DecoderError, /invalid webp/i
         end
       end
     end
     context "raise DecoderError on invalid options" do
       factories[:png].each do |image|
         it "#{image}.png image" do
-          in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
-          out_filename = File.expand_path(File.join(@out_dir, "#{image}.invpng.webp"))
-          expect { WebP.decode(in_filename, out_filename, crop_w: 30000) }.to raise_error WebP::DecoderError
+          in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
+          out_filename = File.expand_path(File.join(@out_dir, "#{image}.png"))
+          expect { WebP.decode(in_filename, out_filename, crop_w: 30000) }.to raise_error WebP::DecoderError, /decoding failed/i
         end
       end
     end
