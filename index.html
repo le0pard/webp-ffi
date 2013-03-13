@@ -103,7 +103,7 @@ WebP.webp_size(File.open(filename, "rb").read)
  =&gt; [2000, 2353]
 </code></pre>
 
-<h3>Encode png, jpg or tiff image to WebP image</h3>
+<h3>Encode WebP image</h3>
 
 <p>Encode png, jpg or tiff image to webp:</p>
 
@@ -112,7 +112,7 @@ out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.webp"))
 WebP.encode(filename, out_filename)
 </code></pre>
 
-<p>Encode png, jpg or tiff image to webp (with options):</p>
+<p>Encode png, jpg or tiff image to webp with options:</p>
 
 <pre><code>WebP.encode(filename, out_filename, quality: 50, resize_w: 100, resize_h: 200)
 WebP.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 100)
@@ -165,16 +165,44 @@ WebP.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_w: 
 <strong>crop_x</strong> (int), <strong>crop_y</strong> (int), <strong>crop_w</strong> (int), <strong>crop_h</strong> (int) - crop picture with the given rectangle</li>
 <li>
 <strong>resize_w</strong> (int), <strong>resize_h</strong> (int) - resize picture (after any cropping)</li>
-</ul><h3>Decode WebP image to png image</h3>
+</ul><h3>Decode WebP image</h3>
 
-<p>Decode webp image to png:</p>
+<p>Decode webp image (default format is png):</p>
 
 <pre><code>filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
 out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
 WebP.decode(filename, out_filename)
 </code></pre>
 
-<h2>Contributing</h2>
+<p>Decode webp image to pam, ppm or pgm format of image:</p>
+
+<pre><code>filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
+out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
+WebP.decode(filename, out_filename, output_format: :pam)
+WebP.decode(filename, out_filename, output_format: :ppm)
+WebP.decode(filename, out_filename, output_format: :pgm)
+</code></pre>
+
+<p>Decode webp image with options:</p>
+
+<pre><code>WebP.encode(filename, out_filename, resize_w: 100, resize_h: 200)
+WebP.encode(filename, out_filename, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 100)
+</code></pre>
+
+<p>Possible decode options:</p>
+
+<ul>
+<li>
+<strong>bypass_filtering</strong> (bool) - disable in-loop filtering</li>
+<li>
+<strong>no_fancy_upsampling</strong> (bool) - don't use the fancy YUV420 upscaler</li>
+<li>
+<strong>use_threads</strong> (bool) - use multi-threading</li>
+<li>
+<strong>crop_x</strong> (int), <strong>crop_y</strong> (int), <strong>crop_w</strong> (int), <strong>crop_h</strong> (int) - crop picture with the given rectangle</li>
+<li>
+<strong>resize_w</strong> (int), <strong>resize_h</strong> (int) - resize picture (after any cropping)</li>
+</ul><h2>Contributing</h2>
 
 <ol>
 <li>Fork it</li>
