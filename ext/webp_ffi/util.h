@@ -27,6 +27,9 @@ int UtilSaveOutput(const WebPDecBuffer* const buffer, OutputFileFormat format, c
 int UtilReadFile(const char* const file_name,
                    const uint8_t** data, size_t* data_size);
 
+int UtilReadPicture(const char* const filename, WebPPicture* const pic,
+                      int keep_alpha);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }    // extern "C"
 #endif
