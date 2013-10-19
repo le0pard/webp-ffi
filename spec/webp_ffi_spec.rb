@@ -42,18 +42,18 @@ describe WebP do
   end
 
   it "calculate plus 100 by test_c (verify C)" do
-    WebP::C.test_c(100).should == 200
-    WebP::C.test_c(150).should == 250
+    expect(WebP::C.test_c(100)).to eq(200)
+    expect(WebP::C.test_c(150)).to eq(250)
   end
   
   it "decoder version" do
-    WebP.decoder_version.should_not be_nil
-    WebP.decoder_version.should =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)$/
+    expect(WebP.decoder_version).not_to be_nil
+    expect(WebP.decoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
   end
   
   it "encoder version" do
-    WebP.encoder_version.should_not be_nil
-    WebP.decoder_version.should =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)$/
+    expect(WebP.encoder_version).not_to be_nil
+    expect(WebP.decoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
   end
   
   context "webp_size" do
@@ -62,9 +62,9 @@ describe WebP do
         filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
         data = File.open(filename, "rb").read
         info = WebP.webp_size(data)
-        info.class.should == Array
-        info.size.should == 2
-        info.should == factories[:info][image][:size]
+        expect(info.class).to eq(Array)
+        expect(info.size).to eq(2)
+        expect(info).to eq(factories[:info][image][:size])
       end
     end
     it "raise InvalidImageFormatError for non-webp image" do
@@ -79,21 +79,21 @@ describe WebP do
       it "#{image}.png image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.png.webp"))
-        WebP.encode(in_filename, out_filename).should be_true
+        expect(WebP.encode(in_filename, out_filename)).to be_true
       end
     end
     factories[:jpg].each do |image|
       it "#{image}.jpg image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.jpg"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.jpg.webp"))
-        WebP.encode(in_filename, out_filename).should be_true
+        expect(WebP.encode(in_filename, out_filename)).to be_true
       end
     end
     factories[:tiff].each do |image|
       it "#{image}.tif image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.tif"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.tif.webp"))
-        WebP.encode(in_filename, out_filename).should be_true
+        expect(WebP.encode(in_filename, out_filename)).to be_true
       end
     end
     factories[:webp].each do |image|
@@ -128,7 +128,7 @@ describe WebP do
       it "#{image}.webp image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.webp.png"))
-        WebP.decode(in_filename, out_filename).should be_true
+        expect(WebP.decode(in_filename, out_filename)).to be_true
       end
     end
     context "with output_format" do
@@ -137,7 +137,7 @@ describe WebP do
           it "#{image}.webp image to #{output_format}" do
             in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
             out_filename = File.expand_path(File.join(@out_dir, "#{image}.#{output_format}.png"))
-            WebP.decode(in_filename, out_filename, output_format: output_format).should be_true
+            expect(WebP.decode(in_filename, out_filename, output_format: output_format)).to be_true
           end
         end
       end
@@ -147,12 +147,12 @@ describe WebP do
         it "#{image}.webp image to png and crop" do
           in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
           out_filename = File.expand_path(File.join(@out_dir, "#{image}_crop.png"))
-          WebP.decode(in_filename, out_filename, crop_w: 200, crop_h: 200).should be_true
+          expect(WebP.decode(in_filename, out_filename, crop_w: 200, crop_h: 200)).to be_true
         end
         it "#{image}.webp image to png and scale" do
           in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
           out_filename = File.expand_path(File.join(@out_dir, "#{image}_resize.png"))
-          WebP.decode(in_filename, out_filename, resize_w: 200, resize_h: 200).should be_true
+          expect(WebP.decode(in_filename, out_filename, resize_w: 200, resize_h: 200)).to be_true
         end
       end
     end
