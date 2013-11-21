@@ -28,26 +28,31 @@
         </ul>
       </header>
       <section>
-        <h1>Webp-ffi</h1>
+        <h1>
+<a name="webp-ffi" class="anchor" href="#webp-ffi"><span class="octicon octicon-link"></span></a>Webp-ffi</h1>
 
-<p><a href="https://travis-ci.org/le0pard/webp-ffi"><img src="https://travis-ci.org/le0pard/webp-ffi.png" alt="Build Status"></a> 
+<p><a href="https://travis-ci.org/le0pard/webp-ffi"><img src="https://travis-ci.org/le0pard/webp-ffi.png" alt="Build Status"></a>
 <a href="https://codeclimate.com/github/le0pard/webp-ffi"><img src="https://codeclimate.com/github/le0pard/webp-ffi.png" alt="Code Climate"></a></p>
 
 <p>Ruby wrapper for libwebp. What is WebP?</p>
 
 <p>WebP is a new image format that provides lossless and lossy compression for images on the web. WebP lossless images are 26% smaller in size compared to PNGs. WebP lossy images are 25-34% smaller in size compared to JPEG images at equivalent SSIM index. WebP supports lossless transparency (also known as alpha channel) with just 22% additional bytes. Transparency is also supported with lossy compression and typically provides 3x smaller file sizes compared to PNG when lossy compression is acceptable for the red/green/blue color channels.</p>
 
-<h2><a href="https://developers.google.com/speed/webp/gallery">WebP Gallery</a></h2>
+<h2>
+<a name="webp-gallery" class="anchor" href="#webp-gallery"><span class="octicon octicon-link"></span></a><a href="https://developers.google.com/speed/webp/gallery">WebP Gallery</a>
+</h2>
 
-<h2>Installation</h2>
+<h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
-<h3>Requirements</h3>
+<h3>
+<a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h3>
 
 <p>First of all you should have install libraries: libpng, libjpeg and libwebp (for libwebp need libpng and libjpeg).</p>
 
 <p>For ubuntu, debian:</p>
 
-<pre><code>sudo apt-get install libjpeg62-dev libpng12-dev libtiff4-dev
+<pre><code>sudo apt-get install libjpeg-dev libpng-dev libtiff-dev
 </code></pre>
 
 <p>For Mac OS:</p>
@@ -62,7 +67,8 @@
 
 <p>Next, you should <a href="https://developers.google.com/speed/webp/docs/compiling">install libwebp</a>.</p>
 
-<h3>Final part</h3>
+<h3>
+<a name="final-part" class="anchor" href="#final-part"><span class="octicon octicon-link"></span></a>Final part</h3>
 
 <p>Add this line to your application's Gemfile:</p>
 
@@ -79,22 +85,25 @@
 <pre><code>$ gem install webp-ffi
 </code></pre>
 
-<h2>Usage</h2>
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
 
-<h3>Encoder end Decoder versions</h3>
+<h3>
+<a name="encoder-end-decoder-versions" class="anchor" href="#encoder-end-decoder-versions"><span class="octicon octicon-link"></span></a>Encoder end Decoder versions</h3>
 
 <p>Basic info about libwebp (encoder and decoder versions):</p>
 
 <pre><code>$ irb
 2.0.0p0 :001 &gt; require 'webp_ffi'
- =&gt; true 
+ =&gt; true
 2.0.0p0 :002 &gt; WebP.decoder_version
- =&gt; "0.2.0" 
+ =&gt; "0.3.1"
 2.0.0p0 :003 &gt; WebP.encoder_version
- =&gt; "0.2.0"
+ =&gt; "0.3.1"
 </code></pre>
 
-<h3>WebP size (width and height)</h3>
+<h3>
+<a name="webp-size-width-and-height" class="anchor" href="#webp-size-width-and-height"><span class="octicon octicon-link"></span></a>WebP size (width and height)</h3>
 
 <p>Get size (width and height) from webp image:</p>
 
@@ -103,7 +112,8 @@ WebP.webp_size(File.open(filename, "rb").read)
  =&gt; [2000, 2353]
 </code></pre>
 
-<h3>Encode WebP image</h3>
+<h3>
+<a name="encode-webp-image" class="anchor" href="#encode-webp-image"><span class="octicon octicon-link"></span></a>Encode WebP image</h3>
 
 <p>Encode png, jpg or tiff image to webp:</p>
 
@@ -165,7 +175,8 @@ WebP.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_w: 
 <strong>crop_x</strong> (int), <strong>crop_y</strong> (int), <strong>crop_w</strong> (int), <strong>crop_h</strong> (int) - crop picture with the given rectangle</li>
 <li>
 <strong>resize_w</strong> (int), <strong>resize_h</strong> (int) - resize picture (after any cropping)</li>
-</ul><h3>Decode WebP image</h3>
+</ul><h3>
+<a name="decode-webp-image" class="anchor" href="#decode-webp-image"><span class="octicon octicon-link"></span></a>Decode WebP image</h3>
 
 <p>Decode webp image (default format is png):</p>
 
@@ -202,7 +213,8 @@ WebP.encode(filename, out_filename, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 
 <strong>crop_x</strong> (int), <strong>crop_y</strong> (int), <strong>crop_w</strong> (int), <strong>crop_h</strong> (int) - crop picture with the given rectangle</li>
 <li>
 <strong>resize_w</strong> (int), <strong>resize_h</strong> (int) - resize picture (after any cropping)</li>
-</ul><h2>Contributing</h2>
+</ul><h2>
+<a name="contributing" class="anchor" href="#contributing"><span class="octicon octicon-link"></span></a>Contributing</h2>
 
 <ol>
 <li>Fork it</li>
