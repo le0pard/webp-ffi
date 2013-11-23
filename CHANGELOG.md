@@ -1,3 +1,7 @@
+## v0.1.8
+
+* Fix decoder options (it was not working fully)
+
 ## v0.1.7
 
 * Bump FFI dependency to ~> 1.9.0
