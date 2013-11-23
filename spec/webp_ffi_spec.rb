@@ -29,7 +29,7 @@ describe WebP do
       }
     }
   }
-  
+
   before :all do
     @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
     Dir.mkdir(@out_dir) unless File.exists?(@out_dir)
@@ -45,17 +45,17 @@ describe WebP do
     expect(WebP::C.test_c(100)).to eq(200)
     expect(WebP::C.test_c(150)).to eq(250)
   end
-  
+
   it "decoder version" do
     expect(WebP.decoder_version).not_to be_nil
     expect(WebP.decoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
   end
-  
+
   it "encoder version" do
     expect(WebP.encoder_version).not_to be_nil
     expect(WebP.decoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
   end
-  
+
   context "webp_size" do
     factories[:webp].each do |image|
       it "#{image} image size == #{factories[:info][image][:size]}" do
@@ -73,7 +73,7 @@ describe WebP do
       expect { WebP.webp_size(data) }.to raise_error WebP::InvalidImageFormatError
     end
   end
-  
+
   context "encode" do
     factories[:png].each do |image|
       it "#{image}.png image" do
@@ -122,7 +122,7 @@ describe WebP do
       end
     end
   end
-  
+
   context "decode" do
     factories[:webp].each do |image|
       it "#{image}.webp image" do

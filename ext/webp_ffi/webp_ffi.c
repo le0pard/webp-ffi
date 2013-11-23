@@ -57,6 +57,13 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   int keep_alpha = 1;
   WebPPicture picture;
   WebPConfig config;
+
+  if (!WebPPictureInit(&picture) ||
+      !WebPConfigInit(&config)) {
+    //fprintf(stderr, "Error! Version mismatch!\n");
+    return 1;
+  }
+
   // OPTIONS BEGIN
   if (encode_config->lossless == 0 || encode_config->lossless == 1){
     config.lossless = encode_config->lossless;
@@ -120,25 +127,19 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
     picture.height = encode_config->height;
   }
   // OPTIONS END
-  
-  if (!WebPPictureInit(&picture) ||
-      !WebPConfigInit(&config)) {
-    //fprintf(stderr, "Error! Version mismatch!\n");
-    return 1;
-  }
-  
+
   if (!WebPValidateConfig(&config)) {
     //fprintf(stderr, "Error! Invalid configuration.\n");
     return_value = 2;
     goto Error;
   }
-  
+
   if (!UtilReadPicture(in_file, &picture, keep_alpha)) {
     //fprintf(stderr, "Error! Cannot read input picture file '%s'\n", in_file);
     return_value = 3;
     goto Error;
   }
-  
+
   out = fopen(out_file, "wb");
   if (out == NULL) {
     //fprintf(stderr, "Error! Cannot open output file '%s'\n", out_file);
@@ -147,7 +148,7 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   }
   picture.writer = EncodeWriter;
   picture.custom_ptr = (void*)out;
-  
+
   if ((encode_config->crop_w | encode_config->crop_h) > 0){
     if (!WebPPictureView(&picture, encode_config->crop_x, encode_config->crop_y, encode_config->crop_w, encode_config->crop_h, &picture)) {
       //fprintf(stderr, "Error! Cannot crop picture\n");
@@ -155,7 +156,7 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
       goto Error;
     }
   }
-  
+
   if ((encode_config->resize_w | encode_config->resize_h) > 0) {
     if (!WebPPictureRescale(&picture, encode_config->resize_w, encode_config->resize_h)) {
       //fprintf(stderr, "Error! Cannot resize picture\n");
@@ -163,18 +164,18 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
       goto Error;
     }
   }
-  
+
   if (picture.extra_info_type > 0) {
     AllocExtraInfo(&picture);
   }
-  
+
   if (!WebPEncode(&config, &picture)) {
     //fprintf(stderr, "Error! Cannot encode picture as WebP\n");
     return_value = 7;
     goto Error;
   }
   return_value = 0;
-  
+
 Error:
   free(picture.extra_info);
   WebPPictureFree(&picture);
@@ -198,7 +199,7 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
     //fprintf(stderr, "Library version mismatch!\n");
     return 1;
   }
-  
+
   if (decode_config->output_format != format){
     format = decode_config->output_format;
   }
@@ -223,20 +224,20 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
     config.options.scaled_width  = decode_config->resize_w;
     config.options.scaled_height = decode_config->resize_h;
   }
-  
+
   VP8StatusCode status = VP8_STATUS_OK;
   size_t data_size = 0;
   const uint8_t* data = NULL;
-  
+
   if (!UtilReadFile(in_file, &data, &data_size)) return -1;
-  
+
   status = WebPGetFeatures(data, data_size, bitstream);
   if (status != VP8_STATUS_OK) {
     //fprintf(stderr, "This is invalid webp image!\n");
     return_value = 2;
     goto Error;
   }
-  
+
   switch (format) {
     case PNG:
       output_buffer->colorspace = bitstream->has_alpha ? MODE_RGBA : MODE_RGB;
@@ -258,7 +259,7 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
       return 3;
   }
   status = WebPDecode(data, data_size, &config);
-  
+
   if (status != VP8_STATUS_OK) {
     //fprintf(stderr, "Decoding of %s failed.\n", in_file);
     return_value = 4;
@@ -266,8 +267,8 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
   }
   UtilSaveOutput(output_buffer, format, out_file);
   return_value = 0;
-  
-Error:  
+
+Error:
   free((void*)data);
   WebPFreeDecBuffer(output_buffer);
   return return_value;
