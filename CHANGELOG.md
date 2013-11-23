@@ -1,6 +1,6 @@
 ## v0.1.8
 
-* Fix decoder options (it was not working fully)
+* Fix encoder options (didn't work fully)
 
 ## v0.1.7
 
