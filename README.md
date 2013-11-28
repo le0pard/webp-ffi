@@ -13,21 +13,21 @@ WebP is a new image format that provides lossless and lossy compression for imag
 
 ### Requirements
 
-First of all you should have install libraries: libpng, libjpeg and libwebp (for libwebp need libpng and libjpeg).
+First of all you should have install libraries: libpng, libjpeg and libtiff.
 
-For ubuntu, debian:
+For Ubuntu, Debian:
 
     sudo apt-get install libjpeg-dev libpng-dev libtiff-dev
 
 For Mac OS:
 
-    sudo port install jpeg libpng tiff
-
-or:
-
     brew install libjpg libpng libtiff
 
-Next, you should [install libwebp](https://developers.google.com/speed/webp/docs/compiling).
+or (for MacPorts):
+
+    sudo port install jpeg libpng tiff
+
+Next, you should [install libwebp](https://developers.google.com/speed/webp/docs/compiling). This gem is not support Windows systems (sorry).
 
 ### Final part
 
