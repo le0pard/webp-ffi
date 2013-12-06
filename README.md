@@ -27,7 +27,7 @@ or (for MacPorts):
 
     sudo port install jpeg libpng tiff
 
-Next, if you did not use `brew` you should [install libwebp](https://developers.google.com/speed/webp/docs/compiling). This gem is not support Windows systems (sorry).
+Next, you should [install libwebp](https://developers.google.com/speed/webp/docs/compiling) (if you didn't install it by `brew` in Mac OS). This gem is not support Windows systems (sorry).
 
 ### Final part
 
