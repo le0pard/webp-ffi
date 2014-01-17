@@ -6,17 +6,20 @@ extern "C" {
 #endif
 
 typedef enum {
-  PNG = 0,
-  PAM,
-  PPM,
-  PGM,
+  oPNG = 0,
+  oPAM,
+  oPPM,
+  oPGM,
+  oBMP,
+  oTIFF_,
+  oYUV,
   ALPHA_PLANE_ONLY  // this is for experimenting only
 } OutputFileFormat;
 
 typedef enum {
-  PNG_ = 0,
-  JPEG_,
-  TIFF_,  // 'TIFF' clashes with libtiff
+  iPNG_ = 0,
+  iJPEG_,
+  iTIFF_,  // 'TIFF' clashes with libtiff
   UNSUPPORTED
 } InputFileFormat;
 

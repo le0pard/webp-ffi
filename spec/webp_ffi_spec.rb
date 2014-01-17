@@ -132,7 +132,7 @@ describe WebP do
       end
     end
     context "with output_format" do
-      [:png, :pam, :ppm, :pgm, :alpha_plane_only].each do |output_format|
+      [:png, :pam, :ppm, :pgm, :bmp, :tiff, :yuv, :alpha_plane_only].each do |output_format|
         factories[:webp].take(2).each do |image|
           it "#{image}.webp image to #{output_format}" do
             in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))

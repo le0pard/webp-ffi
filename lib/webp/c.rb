@@ -5,6 +5,9 @@ module WebP
                   :pam,
                   :ppm,
                   :pgm,
+                  :bmp,
+                  :tiff,
+                  :yuv,
                   :alpha_plane_only )
     # struct
     class FfiWebpEncodeConfig < FFI::Struct
@@ -37,7 +40,7 @@ module WebP
         :resize_w, :int,
         :resize_h, :int
     end
-    
+
     class FfiWebpDecodeConfig < FFI::Struct
       layout  :output_format, OutputFileFormat,
         :bypass_filtering, :int,

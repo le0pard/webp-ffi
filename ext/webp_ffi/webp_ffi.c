@@ -3,13 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "webp/decode.h"
-#include "webp/encode.h"
-
 // utils
 #include "./util.h"
 #include "./webp_ffi.h"
-
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -193,7 +189,7 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
   WebPDecoderConfig config;
   WebPDecBuffer* const output_buffer = &config.output;
   WebPBitstreamFeatures* const bitstream = &config.input;
-  OutputFileFormat format = PNG;
+  OutputFileFormat format = oPNG;
 
   if (!WebPInitDecoderConfig(&config)) {
     //fprintf(stderr, "Library version mismatch!\n");
@@ -239,16 +235,24 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
   }
 
   switch (format) {
-    case PNG:
+    case oPNG:
       output_buffer->colorspace = bitstream->has_alpha ? MODE_RGBA : MODE_RGB;
       break;
-    case PAM:
+    case oPAM:
       output_buffer->colorspace = MODE_RGBA;
       break;
-    case PPM:
+    case oPPM:
       output_buffer->colorspace = MODE_RGB;  // drops alpha for PPM
       break;
-    case PGM:
+    case oBMP:
+      output_buffer->colorspace = bitstream->has_alpha ? MODE_BGRA : MODE_BGR;
+      break;
+    case oTIFF_:    // note: force pre-multiplied alpha
+      output_buffer->colorspace =
+          bitstream->has_alpha ? MODE_rgbA : MODE_RGB;
+      break;
+    case oPGM:
+    case oYUV:
       output_buffer->colorspace = bitstream->has_alpha ? MODE_YUVA : MODE_YUV;
       break;
     case ALPHA_PLANE_ONLY:
@@ -258,6 +262,7 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
       free((void*)data);
       return 3;
   }
+
   status = WebPDecode(data, data_size, &config);
 
   if (status != VP8_STATUS_OK) {
