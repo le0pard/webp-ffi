@@ -116,13 +116,16 @@ Decode webp image (default format is png):
     WebP.decode(filename, out_filename)
 
 
-Decode webp image to pam, ppm or pgm format of image:
+Decode webp image to pam, ppm, pgm, bmp, tiff or yuv format of image:
 
     filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
     out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.png"))
     WebP.decode(filename, out_filename, output_format: :pam)
     WebP.decode(filename, out_filename, output_format: :ppm)
     WebP.decode(filename, out_filename, output_format: :pgm)
+    WebP.decode(filename, out_filename, output_format: :bmp)
+    WebP.decode(filename, out_filename, output_format: :tiff)
+    WebP.decode(filename, out_filename, output_format: :yuv)
 
 
 Decode webp image with options:
