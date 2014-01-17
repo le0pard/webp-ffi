@@ -1,3 +1,7 @@
+## v0.2.1
+
+* Fix output for bmp, tiff and yuv
+
 ## v0.2.0
 
 * Checked and fixed for webp 0.4.0
