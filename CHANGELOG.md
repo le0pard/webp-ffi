@@ -1,3 +1,7 @@
+## v0.2.0
+
+* Checked and fixed for webp 0.4.0
+
 ## v0.1.8
 
 * Fix encoder options (didn't work fully)
