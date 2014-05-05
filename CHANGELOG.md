@@ -1,3 +1,7 @@
+## v0.2.2
+
+* Fix png lossless
+
 ## v0.2.1
 
 * Fix output for bmp, tiff and yuv
