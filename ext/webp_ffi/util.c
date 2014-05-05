@@ -63,10 +63,9 @@ static int UtilReadJPEG(FILE* in_file, WebPPicture* const pic) {
   int ok = 0;
   int stride, width, height;
   uint8_t* rgb = NULL;
-  uint8_t* row_ptr = NULL;
   struct jpeg_decompress_struct dinfo;
   struct my_error_mgr jerr;
-  JSAMPARRAY buffer;
+  JSAMPROW buffer[1];
 
   dinfo.err = jpeg_std_error(&jerr.pub);
   jerr.pub.error_exit = my_error_exit;
@@ -82,7 +81,6 @@ static int UtilReadJPEG(FILE* in_file, WebPPicture* const pic) {
   jpeg_read_header(&dinfo, TRUE);
 
   dinfo.out_color_space = JCS_RGB;
-  dinfo.dct_method = JDCT_IFAST;
   dinfo.do_fancy_upsampling = TRUE;
 
   jpeg_start_decompress(&dinfo);
@@ -99,20 +97,13 @@ static int UtilReadJPEG(FILE* in_file, WebPPicture* const pic) {
   if (rgb == NULL) {
     goto End;
   }
-  row_ptr = rgb;
-
-  buffer = (*dinfo.mem->alloc_sarray) ((j_common_ptr) &dinfo,
-                                       JPOOL_IMAGE, stride, 1);
-  if (buffer == NULL) {
-    goto End;
-  }
+  buffer[0] = (JSAMPLE*)rgb;
 
   while (dinfo.output_scanline < dinfo.output_height) {
     if (jpeg_read_scanlines(&dinfo, buffer, 1) != 1) {
       goto End;
     }
-    memcpy(row_ptr, buffer[0], stride);
-    row_ptr += stride;
+    buffer[0] += stride;
   }
 
   jpeg_finish_decompress(&dinfo);
@@ -122,11 +113,10 @@ static int UtilReadJPEG(FILE* in_file, WebPPicture* const pic) {
   pic->width = width;
   pic->height = height;
   ok = WebPPictureImportRGB(pic, rgb, stride);
+  if (!ok) goto Error;
 
  End:
-  if (rgb) {
-    free(rgb);
-  }
+  free(rgb);
   return ok;
 }
 
