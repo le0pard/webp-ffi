@@ -1,3 +1,7 @@
+## v0.2.3
+
+* Fix jpg read in C code
+
 ## v0.2.2
 
 * Fix png lossless
