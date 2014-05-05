@@ -137,7 +137,8 @@ static void PNGAPI error_function(png_structp png, png_const_charp dummy) {
 
 static int UtilReadPNG(FILE* in_file, WebPPicture* const pic, int keep_alpha) {
   png_structp png;
-  png_infop info;
+  png_infop info = NULL;
+  png_infop end_info = NULL;
   int color_type, bit_depth, interlaced;
   int has_alpha;
   int num_passes;
@@ -155,13 +156,14 @@ static int UtilReadPNG(FILE* in_file, WebPPicture* const pic, int keep_alpha) {
   png_set_error_fn(png, 0, error_function, NULL);
   if (setjmp(png_jmpbuf(png))) {
  Error:
-    png_destroy_read_struct(&png, NULL, NULL);
-    free(rgb);
+    png_destroy_read_struct(&png, &info, &end_info);
     goto End;
   }
 
   info = png_create_info_struct(png);
   if (info == NULL) goto Error;
+  end_info = png_create_info_struct(png);
+  if (end_info == NULL) goto Error;
 
   png_init_io(png, in_file);
   png_read_info(png, info);
@@ -202,20 +204,21 @@ static int UtilReadPNG(FILE* in_file, WebPPicture* const pic, int keep_alpha) {
       png_read_rows(png, &row, NULL, 1);
     }
   }
-  png_read_end(png, info);
-  png_destroy_read_struct(&png, &info, NULL);
+  png_read_end(png, end_info);
+  png_destroy_read_struct(&png, &info, &end_info);
 
   pic->width = width;
   pic->height = height;
+  pic->use_argb = 1;
   ok = has_alpha ? WebPPictureImportRGBA(pic, rgb, stride)
                  : WebPPictureImportRGB(pic, rgb, stride);
-  free(rgb);
 
-  if (ok && has_alpha && keep_alpha == 2) {
-    WebPCleanupTransparentArea(pic);
+  if (!ok) {
+    goto Error;
   }
 
  End:
+  free(rgb);
   return ok;
 }
 
