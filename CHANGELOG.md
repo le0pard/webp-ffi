@@ -1,3 +1,7 @@
+## v0.2.4
+
+* DRY C code and split into files each read/write formats
+
 ## v0.2.3
 
 * Fix jpg read in C code
