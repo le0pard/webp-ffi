@@ -17,7 +17,7 @@ First of all you should have install libraries: libpng, libjpeg and libtiff.
 
 For Ubuntu, Debian:
 
-    sudo apt-get install libjpeg-dev libpng-dev libtiff-dev
+    sudo apt-get install libjpeg-dev libpng-dev libtiff-dev libwebp-dev
 
 For Mac OS:
 
