@@ -1,7 +1,7 @@
 #/usr/bin/env sh
-wget http://webp.googlecode.com/files/libwebp-0.4.0.tar.gz
-tar xvzf libwebp-0.4.0.tar.gz
-cd libwebp-0.4.0
+wget http://downloads.webmproject.org/releases/webp/libwebp-0.4.1.tar.gz
+tar xvzf libwebp-0.4.1.tar.gz
+cd libwebp-0.4.1
 ./configure
 make
 sudo make install
