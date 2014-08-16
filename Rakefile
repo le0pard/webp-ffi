@@ -20,8 +20,10 @@ namespace "ffi-compiler" do
     c.have_library?('png')
     c.have_library?('jpeg')
     c.have_library?('tiff')
-    c.cflags << "-arch x86_64" if c.platform.mac?
-    c.ldflags << "-arch x86_64" if c.platform.mac?
+    if c.platform.mac?
+      c.cflags << "-arch x86_64"
+      c.ldflags << "-arch x86_64"
+    end
   end
 end
 task :compile => ["ffi-compiler:default"]
