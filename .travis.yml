@@ -12,7 +12,7 @@ rvm:
   - ruby-head
   - jruby-head
 
-sudo: false
+sudo: true
 
 notifications:
   email: false
