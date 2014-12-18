@@ -24,6 +24,8 @@ namespace "ffi-compiler" do
       c.cflags << "-arch x86_64"
       c.ldflags << "-arch x86_64"
     end
+    c.ldflags << ENV['LD_FLAGS'] if ENV['LD_FLAGS']
+    c.cflags << ENV['C_FLAGS'] if ENV['C_FLAGS']
   end
 end
 task :compile => ["ffi-compiler:default"]
