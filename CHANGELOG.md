@@ -1,3 +1,7 @@
+## v0.2.5
+
+* Fix build for Travis CI docker containers
+
 ## v0.2.4
 
 * DRY C code and split into files each read/write formats
