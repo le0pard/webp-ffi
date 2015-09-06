@@ -19,6 +19,10 @@ For Ubuntu, Debian:
 
     sudo apt-get install libjpeg-dev libpng-dev libtiff-dev libwebp-dev
 
+For Fedora, CentOS:
+    
+    sudo dnf install libjpeg-devel libpng-devel libtiff-devel libwebp-devel
+
 For Mac OS:
 
     brew install libjpg libpng libtiff webp
