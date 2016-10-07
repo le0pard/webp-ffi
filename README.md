@@ -20,7 +20,7 @@ For Ubuntu, Debian:
     sudo apt-get install libjpeg-dev libpng-dev libtiff-dev libwebp-dev
 
 For Fedora, CentOS:
-    
+
     sudo dnf install libjpeg-devel libpng-devel libtiff-devel libwebp-devel
 
 For Mac OS:
@@ -145,6 +145,47 @@ Possible decode options:
  * **use\_threads** (bool) - use multi-threading
  * **crop\_x** (int), **crop\_y** (int), **crop\_w** (int), **crop\_h** (int) - crop picture with the given rectangle
  * **resize\_w** (int), **resize\_h** (int) - resize picture (after any cropping)
+
+## Rails assets pipeline integration
+
+For integration with Rails 3+ you can use very simple rake task:
+
+```ruby
+# Place this code in lib/tasks/assets.rake
+require 'webp-ffi'
+
+namespace :assets do
+  desc "Create .gz versions of assets"
+  task :webp => :environment do
+    image_types = /\.(?:png|jpe?g)$/
+
+    public_assets = File.join(
+      Rails.root,
+      "public",
+      Rails.application.config.assets.prefix)
+
+    Dir["#{public_assets}/**/*"].each do |filename|
+      next unless filename =~ image_types
+
+      mtime = File.mtime(filename)
+      webp_file = "#{filename}.webp"
+      next if File.exist?(webp_file) && File.mtime(webp_file) >= mtime
+      begin
+        WebP.encode(filename, webp_file)
+        File.utime(mtime, mtime, webp_file)
+        puts "Webp converted image #{webp_file}"
+      rescue => e
+        puts "Webp convertion error of image #{webp_file}. Error info: #{e.message}"
+      end
+    end
+  end
+
+  # Hook into existing assets:precompile task
+  Rake::Task["assets:precompile"].enhance do
+    Rake::Task["assets:webp"].invoke
+  end
+end
+```
 
 ## Contributing
 
