@@ -35,10 +35,10 @@ describe WebP do
     Dir.mkdir(@out_dir) unless File.exists?(@out_dir)
   end
   after :all do
-    @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
-    Dir["#{@out_dir}/*{.png,.webp}"].each do |file|
-      File.delete(file) rescue nil
-    end
+    # @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
+    # Dir["#{@out_dir}/*{.png,.webp}"].each do |file|
+    #   File.delete(file) rescue nil
+    # end
   end
 
   it "calculate plus 100 by test_c (verify C)" do
@@ -81,12 +81,24 @@ describe WebP do
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.png.webp"))
         expect(WebP.encode(in_filename, out_filename)).to be_truthy
       end
+
+      it "#{image}.png image with near_lossless" do
+        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.png"))
+        out_filename = File.expand_path(File.join(@out_dir, "#{image}_near_lossless.png.webp"))
+        expect(WebP.encode(in_filename, out_filename, near_lossless: 60)).to be_truthy
+      end
     end
     factories[:jpg].each do |image|
       it "#{image}.jpg image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.jpg"))
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.jpg.webp"))
         expect(WebP.encode(in_filename, out_filename)).to be_truthy
+      end
+
+      it "#{image}.jpg image with near_lossless" do
+        in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.jpg"))
+        out_filename = File.expand_path(File.join(@out_dir, "#{image}_near_lossless.jpg.webp"))
+        expect(WebP.encode(in_filename, out_filename, near_lossless: 60)).to be_truthy
       end
     end
     factories[:tiff].each do |image|

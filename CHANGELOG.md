@@ -1,3 +1,8 @@
+## v0.2.6
+
+* Tested on webp 1.0.2
+* Added near_lossless option
+
 ## v0.2.5
 
 * Fix build for Travis CI docker containers

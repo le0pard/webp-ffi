@@ -12,6 +12,7 @@ module WebP
     # struct
     class FfiWebpEncodeConfig < FFI::Struct
       layout  :lossless, :int,
+        :near_lossless, :int,
         :quality, :float,
         :method, :int,
         :target_size, :int,

@@ -7,6 +7,7 @@ extern "C" {
 
   typedef struct {
     int lossless;           // Lossless encoding (0=lossy(default), 1=lossless).
+    int near_lossless;      // use near-lossless image preprocessing (0..100=off)
     float quality;          // between 0 (smallest file) and 100 (biggest)
     int method;             // quality/speed trade-off (0=fast, 6=slower-better)
 
@@ -42,7 +43,7 @@ extern "C" {
     int crop_x, crop_y, crop_w, crop_h;
     int resize_w, resize_h;
   } FfiWebpEncodeConfig;
-  
+
   typedef struct {
     OutputFileFormat output_format;
     int bypass_filtering;               // if true, skip the in-loop filtering
@@ -51,7 +52,7 @@ extern "C" {
     int resize_w, resize_h;
     int use_threads;                    // if true, use multi-threaded decoding
   } FfiWebpDecodeConfig;
-  
+
 
   void decoder_version(char *version);
   void encoder_version(char *version);

@@ -8,7 +8,7 @@ module WebP
     def encode_pointer
       options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpEncodeConfig.size, false
       options_struct = C::FfiWebpEncodeConfig.new options_pointer
-      [:lossless, :method, :target_size, :target_PSNR, :segments,
+      [:lossless, :near_lossless, :method, :target_size, :target_PSNR, :segments,
         :sns_strength, :filter_strength, :filter_sharpness,
         :filter_type, :autofilter, :alpha_compression, :alpha_filtering,
         :alpha_quality, :pass, :show_compressed, :preprocessing, :partitions,
