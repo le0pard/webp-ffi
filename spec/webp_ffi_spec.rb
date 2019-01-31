@@ -35,10 +35,10 @@ describe WebP do
     Dir.mkdir(@out_dir) unless File.exists?(@out_dir)
   end
   after :all do
-    # @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
-    # Dir["#{@out_dir}/*{.png,.webp}"].each do |file|
-    #   File.delete(file) rescue nil
-    # end
+    @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
+    Dir["#{@out_dir}/*{.png,.webp}"].each do |file|
+      File.delete(file) rescue nil
+    end
   end
 
   it "calculate plus 100 by test_c (verify C)" do
