@@ -89,6 +89,7 @@ Encode png, jpg or tiff image to webp with options:
 Possible encode options:
 
  * **lossless** (int) - Lossless encoding (0=lossy(default), 1=lossless)
+ * **near_lossless** (int) - Use near-lossless image preprocessing (0=maximum preprocessing, 100=no preprocessing(default))
  * **quality** (float) - between 0 (smallest file) and 100 (biggest)
  * **method** (int) - quality/speed trade-off (0=fast, 6=slower-better)
  * **target\_size** (int) - if non-zero, set the desired target size in bytes. Takes precedence over the 'compression' parameter
@@ -155,7 +156,7 @@ For integration with Rails 3+ you can use very simple rake task:
 require 'webp-ffi'
 
 namespace :assets do
-  desc "Create .gz versions of assets"
+  desc "Create .webp versions of assets"
   task :webp => :environment do
     image_types = /\.(?:png|jpe?g)$/
 
