@@ -1,3 +1,7 @@
+## v0.2.7
+
+* Fix build for old libwebp versions
+
 ## v0.2.6
 
 * Tested on webp 1.0.2
