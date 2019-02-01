@@ -65,7 +65,7 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
     config.lossless = encode_config->lossless;
   }
 
-#ifdef __cplusplus
+#if (ENC_MAJ_VERSION == 0 && ENC_MIN_VERSION > 4) || ENC_MAJ_VERSION > 0
   if (encode_config->near_lossless >= 0 && encode_config->near_lossless <= 100){
     config.near_lossless = encode_config->near_lossless;
     config.lossless = 1;  // use near-lossless only with lossless
