@@ -64,10 +64,14 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
   if (encode_config->lossless == 0 || encode_config->lossless == 1){
     config.lossless = encode_config->lossless;
   }
-  if (WebPGetEncoderVersion() >= 0x010000 && encode_config->near_lossless >= 0 && encode_config->near_lossless <= 100){
+
+#ifdef __cplusplus
+  if (encode_config->near_lossless >= 0 && encode_config->near_lossless <= 100){
     config.near_lossless = encode_config->near_lossless;
     config.lossless = 1;  // use near-lossless only with lossless
   }
+#endif
+
   if (encode_config->quality >= 0 && encode_config->quality <= 100){
     config.quality = encode_config->quality;
   }
