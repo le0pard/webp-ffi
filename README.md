@@ -1,6 +1,6 @@
 # Webp-ffi
 
-[![Build Status](https://travis-ci.org/le0pard/webp-ffi.svg?branch=master)](https://travis-ci.org/le0pard/webp-ffi)
+[![Build Status](https://travis-ci.com/le0pard/webp-ffi.svg?branch=master)](https://travis-ci.com/le0pard/webp-ffi)
 [![Code Climate](https://codeclimate.com/github/le0pard/webp-ffi/badges/gpa.svg)](https://codeclimate.com/github/le0pard/webp-ffi)
 
 Ruby wrapper for libwebp. What is WebP?
