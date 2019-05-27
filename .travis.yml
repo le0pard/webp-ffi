@@ -24,6 +24,7 @@ env:
 
 cache: bundler
 sudo: false
+dist: xenial
 
 notifications:
   email: false
