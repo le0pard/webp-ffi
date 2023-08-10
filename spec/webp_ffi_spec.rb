@@ -32,7 +32,7 @@ describe WebP do
 
   before :all do
     @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
-    Dir.mkdir(@out_dir) unless File.exists?(@out_dir)
+    Dir.mkdir(@out_dir) unless File.exist?(@out_dir)
   end
   after :all do
     @out_dir = File.expand_path(File.join(File.dirname(__FILE__), "../tmp/"))
