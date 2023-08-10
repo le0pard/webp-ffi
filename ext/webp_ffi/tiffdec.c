@@ -5,8 +5,8 @@
 int UtilReadTIFF(const char* const filename,
                     WebPPicture* const pic, int keep_alpha) {
   TIFF* const tif = TIFFOpen(filename, "r");
-  uint32 width, height;
-  uint32* raster;
+  uint32_t width, height;
+  uint32_t* raster;
   int ok = 0;
   int dircount = 1;
 
@@ -25,7 +25,7 @@ int UtilReadTIFF(const char* const filename,
 
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
-  raster = (uint32*)_TIFFmalloc(width * height * sizeof(*raster));
+  raster = (uint32_t*)_TIFFmalloc(width * height * sizeof(*raster));
   if (raster != NULL) {
     if (TIFFReadRGBAImageOriented(tif, width, height, raster,
                                   ORIENTATION_TOPLEFT, 1)) {
