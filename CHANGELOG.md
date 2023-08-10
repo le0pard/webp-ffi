@@ -1,3 +1,9 @@
+## v0.4.0
+
+* Update CI
+* Fix C code deprecations warnings
+* Update test Ruby versions
+
 ## v0.2.7
 
 * Fix build for old libwebp versions
