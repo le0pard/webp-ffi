@@ -13,6 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt -yq --no-install-recommends install libjpeg-dev libpng-dev libtiff-dev
+
       - name: Setup Ruby ${{ matrix.ruby }}
         uses: ruby/setup-ruby@v1
         with:
