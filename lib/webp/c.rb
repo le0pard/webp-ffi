@@ -59,8 +59,10 @@ module WebP
     attach_function :decoder_version, [:pointer], :void
     attach_function :encoder_version, [:pointer], :void
     attach_function :webp_get_info, [:pointer, :size_t, :pointer, :pointer], :int
-    attach_function :webp_encode, [:string, :string, :pointer], :int
-    attach_function :webp_decode, [:string, :string, :pointer], :int
+    # blocking: true releases Ruby's Global VM Lock while C works, so other
+    # threads keep running. The C code never calls back into Ruby.
+    attach_function :webp_encode, [:string, :string, :pointer], :int, blocking: true
+    attach_function :webp_decode, [:string, :string, :pointer], :int, blocking: true
 
     # internal: image size check shared by the PNG, JPEG and TIFF readers
     attach_function :check_image_size, :UtilCheckImageSize, [:uint64, :uint64, :uint64, :pointer, :pointer], :int

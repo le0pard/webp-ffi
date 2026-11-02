@@ -29,6 +29,7 @@ module WebP
     
     # encode
     def encode(input_file, output_file, options = {})
+      input_file, output_file = file_path(input_file), file_path(output_file)
       unless 0 == (encode_res = C.webp_encode(input_file, output_file, init_options_object(options).encode_pointer))
         raise EncoderError, error_message(ENCODER_ERRORS, ENCODER_FILE_ERRORS, encode_res, input_file, output_file)
       end
@@ -37,6 +38,7 @@ module WebP
     
     # decode
     def decode(input_file, output_file, options = {})
+      input_file, output_file = file_path(input_file), file_path(output_file)
       unless 0 == (decode_res = C.webp_decode(input_file, output_file, init_options_object(options).decode_pointer))
         raise DecoderError, error_message(DECODER_ERRORS, DECODER_FILE_ERRORS, decode_res, input_file, output_file)
       end
@@ -44,6 +46,12 @@ module WebP
     end
     
     private
+
+    # Accepts a String, a Pathname or anything with #to_path. Returns a new
+    # string, because C reads it while other Ruby threads keep running.
+    def file_path(file)
+      String.new(File.path(file))
+    end
 
     def error_message(messages, file_errors, code, input_file, output_file)
       message = code.between?(1, messages.size) ? messages[code - 1] : "Unknown error (code #{code})"

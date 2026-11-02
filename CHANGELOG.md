@@ -14,6 +14,13 @@
 * Stop the build early with install instructions when libwebp, libpng, libjpeg or libtiff is missing
 * Ship a smaller gem without specs and test images
 * Add rake as a runtime dependency, because gem install uses it to build the extension
+* Release the Global VM Lock during encode and decode, so other Ruby threads keep running
+* Accept `Pathname` and other objects with `#to_path` as file names
+* Warn about unknown options, with a suggestion for typos
+* Raise `ArgumentError` for an unknown `output_format` instead of silently writing PNG
+* Raise `ArgumentError` for option values that are not numbers
+* Accept `true` and `false` for integer options; `false` now means 0 instead of the libwebp default
+* Accept the decode `output_format` as a string
 
 ## v0.4.0
 

@@ -86,8 +86,12 @@ Encode png, jpg or tiff image to webp (only the first page of a multi-page tiff 
 Encode png, jpg or tiff image to webp with options:
 
     WebP.encode(filename, out_filename, quality: 50, resize_w: 100, resize_h: 200)
-    WebP.encode(filename, out_filename, quality: 75, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 100)
+    WebP.encode(filename, out_filename, quality: 75, crop_x: 0, crop_y: 0, crop_w: 100, crop_h: 100)
 
+
+File names can be strings or `Pathname` objects.
+
+Integer options also accept `true` and `false` (as 1 and 0). A value that is not a number raises `ArgumentError`. Unknown option names are ignored with a warning, so typos are easy to spot.
 
 Possible encode options:
 
@@ -138,17 +142,21 @@ Decode webp image to pam, ppm, pgm, bmp, tiff or yuv format of image:
 
 Decode webp image with options:
 
-    WebP.encode(filename, out_filename, resize_w: 100, resize_h: 200)
-    WebP.encode(filename, out_filename, crop_x: 0, cropt_y: 0, crop_w: 100, crop_h: 100)
+    WebP.decode(filename, out_filename, resize_w: 100, resize_h: 200)
+    WebP.decode(filename, out_filename, crop_x: 0, crop_y: 0, crop_w: 100, crop_h: 100)
 
 
-Possible decode options:
+Possible decode options (unknown options are ignored with a warning, and an unknown `output_format` raises `ArgumentError`):
 
  * **bypass\_filtering** (bool) - disable in-loop filtering
  * **no\_fancy\_upsampling** (bool) - don't use the fancy YUV420 upscaler
  * **use\_threads** (bool) - use multi-threading
  * **crop\_x** (int), **crop\_y** (int), **crop\_w** (int), **crop\_h** (int) - crop picture with the given rectangle
  * **resize\_w** (int), **resize\_h** (int) - resize picture (after any cropping)
+
+### Threads
+
+`WebP.encode` and `WebP.decode` release Ruby's Global VM Lock while libwebp works, so other threads (for example in Puma or Sidekiq) keep running during long conversions.
 
 ## Rails assets pipeline integration
 
