@@ -26,7 +26,13 @@ describe "WebP compared with cwebp" do
     File.binwrite(input, input_data)
     # without -quiet, so a failure shows cwebp's own reason
     out, status = Open3.capture2e("cwebp", *flags, input, "-o", output)
-    raise "cwebp #{flags.join(' ')} failed:\n#{out}" unless status.success?
+    unless status.success?
+      # some builds lack a format, for example the cwebp on GitHub's macOS
+      # runners has no TIFF support
+      missing = out[/^(\w+) support not compiled/, 1]
+      skip("this cwebp was built without #{missing} support") if missing
+      raise "cwebp #{flags.join(' ')} failed:\n#{out}"
+    end
     File.binread(output)
   end
 
