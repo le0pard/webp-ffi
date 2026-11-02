@@ -89,3 +89,41 @@ jobs:
       - name: Check type signatures at runtime
         run: |
           bundle exec rake spec:types
+
+  sanitizers:
+    name: "Linux, AddressSanitizer and UndefinedBehaviorSanitizer"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -yq --no-install-recommends libwebp-dev libpng-dev libjpeg-dev libtiff-dev
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          bundler-cache: true
+          ruby-version: '4.0'
+
+      - name: Build package with sanitizers
+        env:
+          CFLAGS: "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all"
+          LDFLAGS: "-fsanitize=address,undefined"
+        run: |
+          bundle exec rake compile
+
+      - name: Test package with sanitizers
+        env:
+          ASAN_OPTIONS: "detect_leaks=0:detect_stack_use_after_return=0:abort_on_error=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+        # The sanitizer runtime has to be preloaded into Ruby, which is not built
+        # with it. Like that it aborts when Ruby starts threads or child
+        # processes, so those specs only run in the other jobs.
+        run: |
+          bundle exec env LD_PRELOAD="$(gcc -print-file-name=libasan.so)" \
+            rspec --exclude-pattern "spec/{build_config,cwebp,threads}_spec.rb"

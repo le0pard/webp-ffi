@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -83,7 +84,9 @@ static InputFileFormat GetImageType(FILE* in_file) {
     return format;
   }
 
-  magic = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+  // shift unsigned values: buf[0] << 24 as an int overflows for bytes >= 0x80
+  magic = ((unsigned int)buf[0] << 24) | ((unsigned int)buf[1] << 16) |
+          ((unsigned int)buf[2] << 8) | buf[3];
   if (magic == 0x89504E47U) {
     format = iPNG_;
   } else if (magic >= 0xFFD8FF00U && magic <= 0xFFD8FFFFU) {
@@ -115,8 +118,15 @@ int UtilReadPictureFile(FILE* const in_file, WebPPicture* const pic,
   return ok;
 }
 
+int UtilFileExists(const char* const path) {
+  struct stat info;
+  return stat(path, &info) == 0;
+}
+
 int UtilSaveOutput(const WebPDecBuffer* const buffer,
                        OutputFileFormat format, const char* const out_file) {
+  // a failed write removes the file, but only when this call created it
+  const int existed = UtilFileExists(out_file);
   int ok;
   FILE* const fout = fopen(out_file, "wb");
   if (!fout) {
@@ -127,6 +137,7 @@ int UtilSaveOutput(const WebPDecBuffer* const buffer,
   if (fclose(fout) != 0) {
     ok = 0;
   }
+  if (!ok && !existed) remove(out_file);
   return ok;
 }
 
@@ -144,8 +155,10 @@ int UtilWriteOutput(const WebPDecBuffer* const buffer,
     ok &= UtilWriteBMP(fout, buffer);
   } else if (format == oTIFF_) {
     ok &= UtilWriteTIFF(fout, buffer);
-  } else if (format == oPGM || format == oYUV) {
+  } else if (format == oPGM) {
     ok &= UtilWritePGM(fout, buffer);
+  } else if (format == oYUV) {
+    ok &= UtilWriteYUV(fout, buffer);
   } else if (format == ALPHA_PLANE_ONLY) {
     ok &= UtilWriteAlphaPlane(fout, buffer);
   } else {
@@ -162,6 +175,7 @@ int UtilReadFile(const char* const file_name,
   int ok;
   void* file_data;
   long file_size;
+  struct stat info;
   FILE* in;
 
   if (file_name == NULL || data == NULL || data_size == NULL) return 0;
@@ -172,7 +186,9 @@ int UtilReadFile(const char* const file_name,
   if (in == NULL) {
     return 0;
   }
-  if (fseek(in, 0, SEEK_END) != 0 ||
+  // only regular files: on Linux a folder opens and reports a huge size
+  if (fstat(fileno(in), &info) != 0 || !S_ISREG(info.st_mode) ||
+      fseek(in, 0, SEEK_END) != 0 ||
       (file_size = ftell(in)) <= 0 ||
       fseek(in, 0, SEEK_SET) != 0) {
     fclose(in);

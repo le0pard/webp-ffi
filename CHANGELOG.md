@@ -33,6 +33,11 @@ New:
 Fixes:
 
 * `target_size` and `target_PSNR` had no effect, because libwebp needs more than one pass; like cwebp, 6 passes are used now
+* A failed encode left an empty output file, which the README's Rails task would then keep forever; the output is now written only after encoding succeeds
+* `output_format: :yuv` wrote the same PGM file as `:pgm`; it now writes the raw YUV planes
+* TIFF input with alpha lost color, because libtiff returns premultiplied pixels; they are now converted back
+* Reading a PNG relied on undefined behavior (a signed left shift)
+* Only regular files are read as input; on Linux a folder made the reader ask for a huge allocation
 * JPEG and TIFF input was converted to YUV before lossless or sharp YUV encoding, so lossless output was not exact
 * Check image sizes before allocating memory in the PNG, JPEG and TIFF readers
 * Fix memory leaks when reading broken PNG and JPEG files
@@ -50,6 +55,7 @@ Build and release:
 * Add rake as a runtime dependency, because gem install uses it to build the extension
 * Release from a `v*` tag through GitHub Actions and RubyGems.org trusted publishing
 * Pin GitHub Actions and Docker images to digests; Dependabot keeps the actions updated
+* CI runs the specs with AddressSanitizer and UndefinedBehaviorSanitizer, and compares the output with libwebp's cwebp
 
 ## v0.4.0
 

@@ -37,6 +37,32 @@ describe "WebP file arguments" do
     expect { WebP.decode(factory_path("1.webp"), nil) }.to raise_error(TypeError)
   end
 
+  it "encodes a file onto itself" do
+    path = @dir.join("same.png")
+    path.binwrite(File.binread(factory_path("1.png")))
+    expect(WebP.encode(path, path)).to be true
+    expect(WebP.webp_size(path.binread)).to eq([400, 301])
+  end
+
+  it "leaves no output file when encoding fails" do
+    output = @dir.join("failed.webp")
+    expect { WebP.encode(factory_path("1.png"), output, crop_w: 30_000) }.to raise_error(WebP::EncoderError)
+    expect(output).not_to exist
+  end
+
+  it "leaves an existing output file alone when encoding fails" do
+    output = @dir.join("old.webp")
+    output.binwrite("old contents")
+    expect { WebP.encode(factory_path("1.png"), output, crop_w: 30_000) }.to raise_error(WebP::EncoderError)
+    expect(output.binread).to eq("old contents")
+  end
+
+  it "leaves no output file when decoding fails" do
+    output = @dir.join("failed.png")
+    expect { WebP.decode(factory_path("1.webp"), output, crop_w: 30_000) }.to raise_error(WebP::DecoderError)
+    expect(output).not_to exist
+  end
+
   it "uses true for lossless encoding" do
     output = @dir.join("lossless.webp")
     WebP.encode(factory_path("1.png"), output, lossless: true)

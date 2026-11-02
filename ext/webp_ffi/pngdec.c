@@ -352,3 +352,38 @@ int UtilWritePGM(FILE* fout, const WebPDecBuffer* const buffer) {
   }
   return ok;
 }
+
+// Based on WebPWriteYUV in libwebp's imageio/image_enc.c.
+int UtilWriteYUV(FILE* fout, const WebPDecBuffer* const buffer) {
+  const int width = buffer->width;
+  const int height = buffer->height;
+  const WebPYUVABuffer* const yuv = &buffer->u.YUVA;
+  const uint8_t* src_y = yuv->y;
+  const uint8_t* src_u = yuv->u;
+  const uint8_t* src_v = yuv->v;
+  const uint8_t* src_a = yuv->a;
+  const int uv_width = (width + 1) / 2;
+  const int uv_height = (height + 1) / 2;
+  const int a_height = (src_a != NULL) ? height : 0;
+  int ok = 1;
+  int y;
+
+  if (src_y == NULL || src_u == NULL || src_v == NULL) return 0;
+  for (y = 0; ok && y < height; ++y) {
+    ok &= (fwrite(src_y, width, 1, fout) == 1);
+    src_y += yuv->y_stride;
+  }
+  for (y = 0; ok && y < uv_height; ++y) {
+    ok &= (fwrite(src_u, uv_width, 1, fout) == 1);
+    src_u += yuv->u_stride;
+  }
+  for (y = 0; ok && y < uv_height; ++y) {
+    ok &= (fwrite(src_v, uv_width, 1, fout) == 1);
+    src_v += yuv->v_stride;
+  }
+  for (y = 0; ok && y < a_height; ++y) {
+    ok &= (fwrite(src_a, width, 1, fout) == 1);
+    src_a += yuv->a_stride;
+  }
+  return ok;
+}

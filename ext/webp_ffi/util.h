@@ -31,7 +31,10 @@ typedef enum {
   UNSUPPORTED
 } InputFileFormat;
 
+// Writes 'buffer' to 'out_file'. When writing fails, a file this call created
+// is removed again. Returns 1 on success.
 int UtilSaveOutput(const WebPDecBuffer* const buffer, OutputFileFormat format, const char* const out_file);
+int UtilFileExists(const char* const path);
 // Writes 'buffer' in 'format' to an open file. Returns 1 on success.
 int UtilWriteOutput(const WebPDecBuffer* const buffer, OutputFileFormat format, FILE* const fout);
 // Allocates storage for entire file 'file_name' and returns contents and size

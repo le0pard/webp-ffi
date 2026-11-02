@@ -101,6 +101,51 @@ const char* UtilTIFFVersion(void) {
   return TIFFGetVersion();
 }
 
+// libtiff's RGBA interface always returns premultiplied (associated) alpha,
+// whatever kind of alpha the file stores, so undo the multiplication.
+// Based on MultARGBRow in libwebp's imageio/tiffdec.c (taken from libwebp's
+// dsp/alpha_processing).
+#define MFIX 24    // 24bit fixed-point arithmetic
+#define HALF ((1u << MFIX) >> 1)
+
+static uint32_t Unmult(uint8_t x, uint32_t mult) {
+  const uint32_t v = (x * mult + HALF) >> MFIX;
+  return (v > 255u) ? 255u : v;
+}
+
+static uint32_t GetScale(uint32_t a) {
+  return (255u << MFIX) / a;
+}
+
+#undef MFIX
+#undef HALF
+
+static void UnmultiplyRow(uint8_t* ptr, uint32_t width) {
+  uint32_t x;
+  for (x = 0; x < width; ++x, ptr += 4) {
+    const uint32_t alpha = ptr[3];
+    if (alpha < 255) {
+      if (alpha == 0) {
+        ptr[0] = ptr[1] = ptr[2] = 0;
+      } else {
+        const uint32_t scale = GetScale(alpha);
+        ptr[0] = (uint8_t)Unmult(ptr[0], scale);
+        ptr[1] = (uint8_t)Unmult(ptr[1], scale);
+        ptr[2] = (uint8_t)Unmult(ptr[2], scale);
+      }
+    }
+  }
+}
+
+// True when the first extra sample is alpha, associated or not.
+static int HasAlphaSample(TIFF* const tif) {
+  uint16_t count = 0;
+  uint16_t* samples = NULL;
+  return TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &count, &samples) && count > 0 &&
+         samples != NULL && (samples[0] == EXTRASAMPLE_ASSOCALPHA ||
+                             samples[0] == EXTRASAMPLE_UNASSALPHA);
+}
+
 static int ExtractMetadataFromTIFF(TIFF* const tif, Metadata* const metadata) {
   uint32_t length = 0;
   void* data = NULL;
@@ -151,6 +196,12 @@ int UtilReadTIFF(FILE* const in_file,
 #ifdef __BIG_ENDIAN__
       TIFFSwabArrayOfLong(raster, raster_size / sizeof(*raster));
 #endif
+      if (keep_alpha && HasAlphaSample(tif)) {
+        uint32_t y;
+        for (y = 0; y < height; ++y) {
+          UnmultiplyRow((uint8_t*)raster + (size_t)y * stride, width);
+        }
+      }
       ok = keep_alpha
          ? WebPPictureImportRGBA(pic, (const uint8_t*)raster, stride)
          : WebPPictureImportRGBX(pic, (const uint8_t*)raster, stride);

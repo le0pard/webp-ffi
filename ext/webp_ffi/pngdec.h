@@ -21,6 +21,8 @@ int UtilWritePNG(FILE* out_file, const WebPDecBuffer* const buffer);
 int UtilWritePPM(FILE* fout, const WebPDecBuffer* const buffer, int alpha);
 int UtilWriteAlphaPlane(FILE* fout, const WebPDecBuffer* const buffer);
 int UtilWritePGM(FILE* fout, const WebPDecBuffer* const buffer);
+// Raw planes: Y, then U and V (half size, rounded up), then alpha if any.
+int UtilWriteYUV(FILE* fout, const WebPDecBuffer* const buffer);
 
 #ifdef __cplusplus
 }    // extern "C"

@@ -237,52 +237,55 @@ static int EncodeToMemory(const FfiWebpEncodeConfig* const encode_config,
   return result;
 }
 
-// Writes the WebP file with the requested metadata to 'out'.
-static int WriteOutput(FILE* const out, const char* const webp, size_t webp_size,
-                       const WebPPicture* const picture, const Metadata* const metadata,
-                       int keep_metadata) {
-  return MetadataWriteWebP(out, (const uint8_t*)webp, webp_size, picture->width,
-                           picture->height, metadata, keep_metadata);
+// Reads a picture (and its metadata, when asked for) from 'in' and encodes it.
+// On success '*webp' holds the encoder output (free it with free()).
+static int EncodeInput(FILE* const in, const FfiWebpEncodeConfig* const encode_config,
+                       const WebPConfig* const config, WebPPicture* const picture,
+                       Metadata* const metadata, char** const webp,
+                       size_t* const webp_size, int* const detail) {
+  if (!UtilReadPictureFile(in, picture, 1, encode_config->metadata > 0 ? metadata : NULL)) {
+    return ENCODE_CANNOT_READ_INPUT;
+  }
+  return EncodeToMemory(encode_config, config, picture, webp, webp_size, detail);
 }
 
-// Reads a picture from 'in', encodes it and writes the WebP file to 'out'.
-static int EncodeStream(FILE* const in, FILE* const out,
-                        const FfiWebpEncodeConfig* const encode_config,
-                        const WebPConfig* const config, WebPPicture* const picture,
-                        int* const detail) {
-  Metadata metadata;
-  char* webp = NULL;
-  size_t webp_size = 0;
-  int result;
+// Writes the WebP file with the requested metadata to 'out_file'. Opening it
+// only now means a failed encode leaves no file, and the input file can be the
+// output file. When writing fails, a file this call created is removed again.
+static int WriteWebPFile(const char* const out_file, const char* const webp,
+                         size_t webp_size, const WebPPicture* const picture,
+                         const Metadata* const metadata, int keep_metadata,
+                         int* const detail) {
+  const int existed = UtilFileExists(out_file);
+  FILE* const out = fopen(out_file, "wb");
+  int ok;
 
-  MetadataInit(&metadata);
-  if (!UtilReadPictureFile(in, picture, 1, encode_config->metadata > 0 ? &metadata : NULL)) {
-    result = ENCODE_CANNOT_READ_INPUT;
-  } else {
-    result = EncodeToMemory(encode_config, config, picture, &webp, &webp_size, detail);
-    if (result == 0 && !WriteOutput(out, webp, webp_size, picture, &metadata,
-                                    encode_config->metadata)) {
-      result = ENCODE_FAILED;
-      *detail = VP8_ENC_ERROR_BAD_WRITE;
-    }
-  }
-  free(webp);
-  MetadataFree(&metadata);
-  return result;
+  if (out == NULL) return ENCODE_CANNOT_OPEN_OUTPUT;
+  ok = MetadataWriteWebP(out, (const uint8_t*)webp, webp_size, picture->width,
+                         picture->height, metadata, keep_metadata);
+  // fclose flushes buffered data, so it can also fail (for example, disk full)
+  if (fclose(out) != 0) ok = 0;
+  if (ok) return 0;
+  if (!existed) remove(out_file);
+  *detail = VP8_ENC_ERROR_BAD_WRITE;
+  return ENCODE_FAILED;
 }
 
 int webp_encode(const char *in_file, const char *out_file,
                 const FfiWebpEncodeConfig *encode_config, int* detail) {
   WebPPicture picture;
   WebPConfig config;
-  FILE* in = NULL;
-  FILE* out = NULL;
+  Metadata metadata;
+  FILE* in;
+  char* webp = NULL;
+  size_t webp_size = 0;
   int result;
 
   *detail = 0;
   result = SetupEncoder(encode_config, &config, &picture);
   // after a version mismatch 'picture' is not initialized, so it can't be freed
   if (result == ENCODE_VERSION_MISMATCH) return result;
+  MetadataInit(&metadata);
   if (result != 0) goto End;
 
   in = fopen(in_file, "rb");
@@ -290,21 +293,19 @@ int webp_encode(const char *in_file, const char *out_file,
     result = ENCODE_CANNOT_READ_INPUT;
     goto End;
   }
-  out = fopen(out_file, "wb");
-  if (out == NULL) {
-    result = ENCODE_CANNOT_OPEN_OUTPUT;
-    goto End;
+  // the input is read completely and closed before the output is opened
+  result = EncodeInput(in, encode_config, &config, &picture, &metadata,
+                       &webp, &webp_size, detail);
+  fclose(in);
+  if (result == 0) {
+    result = WriteWebPFile(out_file, webp, webp_size, &picture, &metadata,
+                           encode_config->metadata, detail);
   }
-  result = EncodeStream(in, out, encode_config, &config, &picture, detail);
 
  End:
+  free(webp);
+  MetadataFree(&metadata);
   WebPPictureFree(&picture);
-  if (in != NULL) fclose(in);
-  // fclose flushes buffered data, so it can also fail (for example, disk full)
-  if (out != NULL && fclose(out) != 0 && result == 0) {
-    result = ENCODE_FAILED;
-    *detail = VP8_ENC_ERROR_BAD_WRITE;
-  }
   return result;
 }
 
@@ -313,8 +314,11 @@ int webp_encode_data(const uint8_t* data, size_t data_size,
                      const FfiWebpEncodeConfig* encode_config, int* detail) {
   WebPPicture picture;
   WebPConfig config;
-  FILE* in = NULL;
-  FILE* out = NULL;
+  Metadata metadata;
+  FILE* in;
+  FILE* out;
+  char* webp = NULL;
+  size_t webp_size = 0;
   char* buffer = NULL;
   size_t buffer_size = 0;
   int result;
@@ -324,6 +328,7 @@ int webp_encode_data(const uint8_t* data, size_t data_size,
   *detail = 0;
   result = SetupEncoder(encode_config, &config, &picture);
   if (result == ENCODE_VERSION_MISMATCH) return result;
+  MetadataInit(&metadata);
   if (result != 0) goto End;
 
   if (data == NULL || data_size == 0) {
@@ -332,18 +337,32 @@ int webp_encode_data(const uint8_t* data, size_t data_size,
   }
   // the readers take a FILE*, so wrap the data in one; "rb" never writes to it
   in = fmemopen((void*)data, data_size, "rb");
-  // a FILE* that collects the WebP file in a growing malloc'ed buffer
-  out = open_memstream(&buffer, &buffer_size);
-  if (in == NULL || out == NULL) {
+  if (in == NULL) {
     result = ENCODE_OUT_OF_MEMORY;
     goto End;
   }
-  result = EncodeStream(in, out, encode_config, &config, &picture, detail);
+  result = EncodeInput(in, encode_config, &config, &picture, &metadata,
+                       &webp, &webp_size, detail);
+  fclose(in);
+  if (result != 0) goto End;
+
+  // a FILE* that collects the WebP file in a growing malloc'ed buffer
+  out = open_memstream(&buffer, &buffer_size);
+  if (out == NULL) {
+    result = ENCODE_OUT_OF_MEMORY;
+    goto End;
+  }
+  if (!MetadataWriteWebP(out, (const uint8_t*)webp, webp_size, picture.width,
+                         picture.height, &metadata, encode_config->metadata)) {
+    result = ENCODE_OUT_OF_MEMORY;
+  }
+  // 'buffer' and 'buffer_size' are final only after fclose
+  if (fclose(out) != 0 && result == 0) result = ENCODE_OUT_OF_MEMORY;
 
  End:
+  free(webp);
+  MetadataFree(&metadata);
   WebPPictureFree(&picture);
-  if (in != NULL) fclose(in);
-  if (out != NULL && fclose(out) != 0 && result == 0) result = ENCODE_OUT_OF_MEMORY;
   if (result == 0) {
     *output = (uint8_t*)buffer;
     *output_size = buffer_size;

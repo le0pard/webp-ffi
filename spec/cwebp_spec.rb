@@ -24,8 +24,9 @@ describe "WebP compared with cwebp" do
     input = File.join(@dir, "input")
     output = File.join(@dir, "output.webp")
     File.binwrite(input, input_data)
-    _out, status = Open3.capture2e("cwebp", "-quiet", *flags, input, "-o", output)
-    raise "cwebp #{flags.join(' ')} failed" unless status.success?
+    # without -quiet, so a failure shows cwebp's own reason
+    out, status = Open3.capture2e("cwebp", *flags, input, "-o", output)
+    raise "cwebp #{flags.join(' ')} failed:\n#{out}" unless status.success?
     File.binread(output)
   end
 

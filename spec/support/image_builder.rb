@@ -46,14 +46,17 @@ module ImageBuilder
     "\n#{name}\n#{format('%8d', data.bytesize)}\n#{hex}\n"
   end
 
-  # little-endian, uncompressed 8-bit RGB with optional ICC and XMP tags
-  def tiff(width, height, pixels:, icc: nil, xmp: nil)
-    entries = [[256, 4, 1, width], [257, 4, 1, height], [258, 3, 3, :bits], [259, 3, 1, 1],
-               [262, 3, 1, 2], [273, 4, 1, :strip], [277, 3, 1, 3], [278, 4, 1, height],
+  # little-endian, uncompressed 8-bit RGB with optional ICC and XMP tags.
+  # With 'alpha' (:associated or :unassociated) the pixels are RGBA.
+  def tiff(width, height, pixels:, icc: nil, xmp: nil, alpha: nil)
+    samples = alpha ? 4 : 3
+    entries = [[256, 4, 1, width], [257, 4, 1, height], [258, 3, samples, :bits], [259, 3, 1, 1],
+               [262, 3, 1, 2], [273, 4, 1, :strip], [277, 3, 1, samples], [278, 4, 1, height],
                [279, 4, 1, pixels.bytesize], [284, 3, 1, 1]]
+    entries << [338, 3, 1, alpha == :associated ? 1 : 2] if alpha  # ExtraSamples
     entries << [700, 1, xmp.bytesize, :xmp] if xmp
     entries << [34675, 7, icc.bytesize, :icc] if icc
-    blobs = { bits: [8, 8, 8].pack("v3"), strip: pixels.b, xmp: xmp&.b, icc: icc&.b }.compact
+    blobs = { bits: ([8] * samples).pack("v*"), strip: pixels.b, xmp: xmp&.b, icc: icc&.b }.compact
     data_start = 8 + 2 + entries.size * 12 + 4
     data = "".b
     offsets = blobs.to_h do |name, blob|

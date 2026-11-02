@@ -50,6 +50,58 @@ describe "WebP inputs and outputs" do
     end
   end
 
+  describe "TIFF with alpha" do
+    # straight RGBA pixels with several alpha levels
+    let(:straight) { [[200, 100, 50, 128], [10, 220, 90, 64], [255, 255, 255, 255], [90, 30, 160, 200]] }
+
+    def premultiply(pixels)
+      pixels.map { |r, g, b, a| [r, g, b].map { |c| (c * a + 127) / 255 } + [a] }
+    end
+
+    # libtiff returns premultiplied colors; the gem must undo that. Compares
+    # premultiplied colors, which keep the precision of the file.
+    def expect_close(actual, expected)
+      actual.zip(expected).each do |(r, g, b, a), (er, eg, eb, ea)|
+        expect(a).to eq(ea)
+        [[r, er], [g, eg], [b, eb]].each { |got, want| expect((got - want).abs * a / 255.0).to be <= 1.5 }
+      end
+    end
+
+    it "reads associated (premultiplied) alpha" do
+      data = tiff(2, 2, alpha: :associated, pixels: premultiply(straight).flatten.pack("C*"))
+      expect_close(round_trip(data), straight)
+    end
+
+    it "reads unassociated (straight) alpha" do
+      data = tiff(2, 2, alpha: :unassociated, pixels: straight.flatten.pack("C*"))
+      expect_close(round_trip(data), straight)
+    end
+
+    it "round-trips the gem's own TIFF output" do
+      webp = File.binread(factory_path("1.webp"))
+      original = WebP.decode_rgba(webp).rgba.unpack("C*").each_slice(4).to_a
+      expect_close(round_trip(WebP.decode_data(webp, output_format: :tiff)), original)
+    end
+  end
+
+  describe "raw YUV output" do
+    it "writes the Y, U and V planes" do
+      yuv = WebP.decode_data(File.binread(factory_path("3.webp")), output_format: :yuv)
+      expect(yuv.bytesize).to eq(550 * 368 + 2 * 275 * 184)
+      expect(yuv).not_to eq(WebP.decode_data(File.binread(factory_path("3.webp")), output_format: :pgm))
+    end
+
+    it "adds the alpha plane for images with alpha" do
+      yuv = WebP.decode_data(File.binread(factory_path("1.webp")), output_format: :yuv)
+      expect(yuv.bytesize).to eq(400 * 301 + 2 * 200 * 151 + 400 * 301)
+    end
+
+    it "encodes back with :width and :height" do
+      yuv = WebP.decode_data(File.binread(factory_path("3.webp")), output_format: :yuv)
+      expect(WebP.webp_size(WebP.encode_data(yuv, width: 550, height: 368))).to eq([550, 368])
+    end
+  end
+
   it "reads raw YUV 4:2:0 data when :width and :height are given" do
     yuv = ([128] * 8 + [128] * 2 + [128] * 2).pack("C*")
     expect(WebP.webp_size(WebP.encode_data(yuv, width: 4, height: 2))).to eq([4, 2])
@@ -97,6 +149,13 @@ describe "WebP inputs and outputs" do
     it "fails to decode" do
       expect { WebP.decode(factory_path("1.webp"), "/dev/full") }
         .to raise_error(WebP::DecoderError, "Cannot write output file: /dev/full")
+    end
+
+    # a failed write only removes files the gem created
+    it "keeps the device file" do
+      [-> { WebP.encode(factory_path("1.png"), "/dev/full") }, -> { WebP.decode(factory_path("1.webp"), "/dev/full") }]
+        .each { |call| expect(&call).to raise_error(WebP::Error) }
+      expect(File.chardev?("/dev/full")).to be true
     end
   end
 end

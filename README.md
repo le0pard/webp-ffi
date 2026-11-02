@@ -187,6 +187,10 @@ Decode webp image to pam, ppm, pgm, bmp, tiff or yuv format of image:
     WebP.decode(filename, out_filename, output_format: :tiff)
     WebP.decode(filename, out_filename, output_format: :yuv)
 
+`:yuv` writes the raw planes (Y, then U and V at half size, then alpha when the image has it), which `WebP.encode_data` reads back with the `width` and `height` options. `:pgm` writes the same planes as a grayscale PGM image.
+
+The output file is written only after decoding succeeds, and encoding reads the whole input first, so the input and output can be the same file. When writing fails, a file the gem created is removed again.
+
 
 Decode webp image with options:
 
