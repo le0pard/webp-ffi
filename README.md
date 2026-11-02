@@ -24,11 +24,15 @@ For Fedora, CentOS:
 
 For Mac OS:
 
-    brew install libjpg libpng libtiff webp
+    brew install webp libpng jpeg-turbo libtiff
 
 or (for MacPorts):
 
-    sudo port install jpeg libpng tiff
+    sudo port install webp jpeg libpng tiff
+
+The build finds libraries installed by Homebrew (`/opt/homebrew` or `/usr/local`) and MacPorts (`/opt/local`). For any other location, pass the paths with `C_FLAGS` and `LD_FLAGS`:
+
+    C_FLAGS="-I/path/to/include" LD_FLAGS="-L/path/to/lib" gem install webp-ffi
 
 Next, you should [install libwebp](https://developers.google.com/speed/webp/docs/compiling) (if you didn't install it by `brew` in Mac OS or by `apt-get` in Ubuntu or Debian). Webp library version should be >= 0.3.0. This gem is not support Windows systems.
 

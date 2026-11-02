@@ -1,9 +1,12 @@
 name: Build
-on: push
+on:
+  push:
+    branches: [master]
+  pull_request:
 
 jobs:
   test:
-    name: "Build"
+    name: "Linux, Ruby ${{ matrix.ruby }}, libwebp ${{ matrix.libwebp }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,9 +35,9 @@ jobs:
 
       - name: Set envs
         run: |
+          echo "C_FLAGS=-I$HOME/opt/include" >> $GITHUB_ENV
           echo "LD_FLAGS=-L$HOME/opt/lib" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib:$HOME/opt/lib" >> $GITHUB_ENV
-          echo "CPATH=$CPATH:$HOME/opt/include" >> $GITHUB_ENV
 
       - name: Build package
         run: |
@@ -44,7 +47,31 @@ jobs:
         run: |
           bundle exec rake spec
 
+  macos:
+    name: "macOS, Ruby ${{ matrix.ruby }}, Homebrew libwebp"
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        ruby: ['3.4', '4.0']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Install deps
+        run: |
+          brew install webp libpng jpeg-turbo libtiff
 
+      - name: Setup Ruby ${{ matrix.ruby }}
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          ruby-version: ${{ matrix.ruby }}
 
+      # no C_FLAGS or LD_FLAGS here: the build must find Homebrew by itself
+      - name: Build package
+        run: |
+          bundle exec rake compile
 
+      - name: Test package
+        run: |
+          bundle exec rake spec

@@ -9,6 +9,11 @@
 * Fix multi-page TIFF files using the last page instead of the first
 * Stop printing errors and warnings to stderr (libtiff older than 4.5.0 still prints its own)
 * Always initialize every decode option passed to C
+* Find libraries from Homebrew on Apple Silicon and from MacPorts without extra flags
+* `C_FLAGS` and `LD_FLAGS` now take priority over the default library folders
+* Stop the build early with install instructions when libwebp, libpng, libjpeg or libtiff is missing
+* Ship a smaller gem without specs and test images
+* Add rake as a runtime dependency, because gem install uses it to build the extension
 
 ## v0.4.0
 
