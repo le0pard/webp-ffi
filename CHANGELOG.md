@@ -1,3 +1,15 @@
+## Unreleased
+
+* Fix `near_lossless` option being ignored with every libwebp version
+* Fix decode reporting success when the output file cannot be written
+* Fix wrong error message when the decode input file cannot be read
+* Include the file path in error messages about input and output files
+* Check image sizes before allocating memory in the PNG, JPEG and TIFF readers
+* Fix memory leaks when reading broken PNG and JPEG files
+* Fix multi-page TIFF files using the last page instead of the first
+* Stop printing errors and warnings to stderr (libtiff older than 4.5.0 still prints its own)
+* Always initialize every decode option passed to C
+
 ## v0.4.0
 
 * Update CI

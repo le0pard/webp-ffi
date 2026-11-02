@@ -65,7 +65,7 @@ int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeCo
     config.lossless = encode_config->lossless;
   }
 
-#if (ENC_MAJ_VERSION == 0 && ENC_MIN_VERSION > 4) || ENC_MAJ_VERSION > 0
+#if WEBP_ENCODER_ABI_VERSION >= 0x0209  // near_lossless was added in libwebp 0.5.0
   if (encode_config->near_lossless >= 0 && encode_config->near_lossless <= 100){
     config.near_lossless = encode_config->near_lossless;
     config.lossless = 1;  // use near-lossless only with lossless
@@ -233,7 +233,9 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
   size_t data_size = 0;
   const uint8_t* data = NULL;
 
-  if (!UtilReadFile(in_file, &data, &data_size)) return -1;
+  if (!UtilReadFile(in_file, &data, &data_size)) {
+    return 5;  // cannot read input file
+  }
 
   status = WebPGetFeatures(data, data_size, bitstream);
   if (status != VP8_STATUS_OK) {
@@ -278,7 +280,10 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
     return_value = 4;
     goto Error;
   }
-  UtilSaveOutput(output_buffer, format, out_file);
+  if (!UtilSaveOutput(output_buffer, format, out_file)) {
+    return_value = 6;  // cannot write output file
+    goto Error;
+  }
   return_value = 0;
 
 Error:

@@ -1,4 +1,5 @@
 #include "./pngdec.h"
+#include "./util.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -12,10 +13,18 @@ static void PNGAPI error_function(png_structp png, png_const_charp dummy) {
   longjmp(png_jmpbuf(png), 1);
 }
 
+// libpng prints warnings to stderr by default. A library should stay quiet.
+static void PNGAPI warning_function(png_structp png, png_const_charp dummy) {
+  (void)png;
+  (void)dummy;
+}
+
 int UtilReadPNG(FILE* in_file, WebPPicture* const pic, int keep_alpha) {
-  png_structp png;
-  png_infop info = NULL;
-  png_infop end_info = NULL;
+  // Locals that change after setjmp() must be volatile, otherwise their values
+  // are undefined when libpng jumps back to the error handler.
+  volatile png_structp png = NULL;
+  volatile png_infop info = NULL;
+  volatile png_infop end_info = NULL;
   int color_type, bit_depth, interlaced;
   int has_alpha;
   int num_passes;
@@ -23,17 +32,19 @@ int UtilReadPNG(FILE* in_file, WebPPicture* const pic, int keep_alpha) {
   int ok = 0;
   png_uint_32 width, height, y;
   int stride;
-  uint8_t* rgb = NULL;
+  size_t rgb_size;
+  uint8_t* volatile rgb = NULL;
 
-  png = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
+  png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (png == NULL) {
     goto End;
   }
 
-  png_set_error_fn(png, 0, error_function, NULL);
+  png_set_error_fn(png, NULL, error_function, warning_function);
   if (setjmp(png_jmpbuf(png))) {
  Error:
-    png_destroy_read_struct(&png, &info, &end_info);
+    png_destroy_read_struct((png_structpp)&png, (png_infopp)&info,
+                            (png_infopp)&end_info);
     goto End;
   }
 
@@ -72,27 +83,27 @@ int UtilReadPNG(FILE* in_file, WebPPicture* const pic, int keep_alpha) {
 
   num_passes = png_set_interlace_handling(png);
   png_read_update_info(png, info);
-  stride = (has_alpha ? 4 : 3) * width * sizeof(*rgb);
-  rgb = (uint8_t*)malloc(stride * height);
+  if (!UtilCheckImageSize(width, height, has_alpha ? 4 : 3,
+                          &stride, &rgb_size)) {
+    goto Error;
+  }
+  rgb = (uint8_t*)malloc(rgb_size);
   if (rgb == NULL) goto Error;
   for (p = 0; p < num_passes; ++p) {
     for (y = 0; y < height; ++y) {
-      png_bytep row = rgb + y * stride;
+      png_bytep row = rgb + (size_t)y * stride;
       png_read_rows(png, &row, NULL, 1);
     }
   }
   png_read_end(png, end_info);
-  png_destroy_read_struct(&png, &info, &end_info);
+  png_destroy_read_struct((png_structpp)&png, (png_infopp)&info,
+                          (png_infopp)&end_info);
 
-  pic->width = width;
-  pic->height = height;
+  pic->width = (int)width;
+  pic->height = (int)height;
   pic->use_argb = 1;
   ok = has_alpha ? WebPPictureImportRGBA(pic, rgb, stride)
                  : WebPPictureImportRGB(pic, rgb, stride);
-
-  if (!ok) {
-    goto Error;
-  }
 
  End:
   free(rgb);
@@ -114,7 +125,7 @@ int UtilWritePNG(FILE* out_file, const WebPDecBuffer* const buffer) {
   png_uint_32 y;
 
   png = png_create_write_struct(PNG_LIBPNG_VER_STRING,
-                                NULL, error_function, NULL);
+                                NULL, error_function, warning_function);
   if (png == NULL) {
     return 0;
   }

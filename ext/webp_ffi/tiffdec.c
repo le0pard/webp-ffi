@@ -1,48 +1,85 @@
 #include "./tiffdec.h"
+#include "./util.h"
 
+#include <stdarg.h>
 #include <tiffio.h>
+#include <tiffvers.h>
+
+// libtiff 4.5.0 added error and warning handlers per opened file.
+#if defined(TIFFLIB_AT_LEAST)
+#if TIFFLIB_AT_LEAST(4, 5, 0)
+#define UTIL_TIFF_HAS_OPEN_OPTIONS
+#endif
+#endif
+
+#ifdef UTIL_TIFF_HAS_OPEN_OPTIONS
+// libtiff prints errors and warnings to stderr by default. A library should
+// stay quiet. Returning 1 also stops libtiff from calling its global handlers.
+static int SilentTIFFHandler(TIFF* tif, void* user_data, const char* module,
+                             const char* fmt, va_list ap) {
+  (void)tif;
+  (void)user_data;
+  (void)module;
+  (void)fmt;
+  (void)ap;
+  return 1;
+}
+#endif
+
+static TIFF* OpenTIFF(const char* const filename) {
+#ifdef UTIL_TIFF_HAS_OPEN_OPTIONS
+  TIFF* tif;
+  TIFFOpenOptions* const opts = TIFFOpenOptionsAlloc();
+  if (opts == NULL) return NULL;
+  TIFFOpenOptionsSetErrorHandlerExtR(opts, SilentTIFFHandler, NULL);
+  TIFFOpenOptionsSetWarningHandlerExtR(opts, SilentTIFFHandler, NULL);
+  tif = TIFFOpenExt(filename, "r", opts);
+  TIFFOpenOptionsFree(opts);
+  return tif;
+#else
+  // Older libtiff only has process-wide handlers. Changing those would affect
+  // other code in the same process, so its messages still reach stderr.
+  return TIFFOpen(filename, "r");
+#endif
+}
 
 int UtilReadTIFF(const char* const filename,
                     WebPPicture* const pic, int keep_alpha) {
-  TIFF* const tif = TIFFOpen(filename, "r");
+  TIFF* const tif = OpenTIFF(filename);
   uint32_t width, height;
   uint32_t* raster;
+  int stride;
+  size_t raster_size;
   int ok = 0;
-  int dircount = 1;
 
   if (tif == NULL) {
-    //fprintf(stderr, "Error! Cannot open TIFF file '%s'\n", filename);
     return 0;
   }
 
-  while (TIFFReadDirectory(tif)) ++dircount;
-
-  if (dircount > 1) {
-    fprintf(stderr, "Warning: multi-directory TIFF files are not supported.\n"
-                    "Only the first will be used, %d will be ignored.\n",
-                    dircount - 1);
+  // Multi-page TIFF files are not supported: only the first page is used.
+  if (!TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width) ||
+      !TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height) ||
+      !UtilCheckImageSize(width, height, sizeof(*raster),
+                          &stride, &raster_size)) {
+    TIFFClose(tif);
+    return 0;
   }
 
-  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
-  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
-  raster = (uint32_t*)_TIFFmalloc(width * height * sizeof(*raster));
+  raster = (uint32_t*)_TIFFmalloc(raster_size);
   if (raster != NULL) {
     if (TIFFReadRGBAImageOriented(tif, width, height, raster,
                                   ORIENTATION_TOPLEFT, 1)) {
-      const int stride = width * sizeof(*raster);
-      pic->width = width;
-      pic->height = height;
+      pic->width = (int)width;
+      pic->height = (int)height;
       // TIFF data is ABGR
 #ifdef __BIG_ENDIAN__
-      TIFFSwabArrayOfLong(raster, width * height);
+      TIFFSwabArrayOfLong(raster, raster_size / sizeof(*raster));
 #endif
       ok = keep_alpha
          ? WebPPictureImportRGBA(pic, (const uint8_t*)raster, stride)
          : WebPPictureImportRGBX(pic, (const uint8_t*)raster, stride);
     }
     _TIFFfree(raster);
-  } else {
-    //fprintf(stderr, "Error allocating TIFF RGBA memory!\n");
   }
 
   if (ok && keep_alpha == 2) {

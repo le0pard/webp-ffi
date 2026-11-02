@@ -72,7 +72,7 @@ Get size (width and height) from webp image:
 
 ### Encode WebP image
 
-Encode png, jpg or tiff image to webp:
+Encode png, jpg or tiff image to webp (only the first page of a multi-page tiff is used):
 
     filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.png"))
     out_filename = File.expand_path(File.join(File.dirname(__FILE__), "tmp/4.webp"))
@@ -88,7 +88,7 @@ Encode png, jpg or tiff image to webp with options:
 Possible encode options:
 
  * **lossless** (int) - Lossless encoding (0=lossy(default), 1=lossless)
- * **near_lossless** (int) - Use near-lossless image preprocessing (0=maximum preprocessing, 100=no preprocessing(default))
+ * **near_lossless** (int) - Use near-lossless image preprocessing (0=maximum preprocessing, 100=no preprocessing(default)). Turns on lossless encoding. Requires libwebp 0.5.0 or newer, ignored on older versions
  * **quality** (float) - between 0 (smallest file) and 100 (biggest)
  * **method** (int) - quality/speed trade-off (0=fast, 6=slower-better)
  * **target\_size** (int) - if non-zero, set the desired target size in bytes. Takes precedence over the 'compression' parameter

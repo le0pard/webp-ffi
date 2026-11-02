@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,34 @@
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
+
+// Same memory cap as the image readers in libwebp (imageio/imageio_util.c).
+#if SIZE_MAX > (1ULL << 34)
+#define UTIL_MAX_ALLOCABLE_MEMORY (1ULL << 34)
+#else
+#define UTIL_MAX_ALLOCABLE_MEMORY ((1ULL << 31) - (1 << 16))
+#endif
+#define UTIL_MAX_BYTES_PER_PIXEL 8
+
+int UtilCheckImageSize(uint64_t width, uint64_t height, uint64_t bytes_per_px,
+                       int* const stride, size_t* const size) {
+  uint64_t row_size, total_size;
+
+  if (width == 0 || height == 0) return 0;
+  if (bytes_per_px == 0 || bytes_per_px > UTIL_MAX_BYTES_PER_PIXEL) return 0;
+  // WebPPicture and the row strides passed to libwebp are plain ints.
+  if (width > INT_MAX || height > INT_MAX) return 0;
+
+  // Both products stay far below 2^64 because of the limits checked above.
+  row_size = width * bytes_per_px;
+  if (row_size > INT_MAX) return 0;
+  total_size = row_size * height;
+  if (total_size > UTIL_MAX_ALLOCABLE_MEMORY) return 0;
+
+  if (stride != NULL) *stride = (int)row_size;
+  if (size != NULL) *size = (size_t)total_size;
+  return 1;
+}
 
 static int UtilReadYUV(FILE* in_file, WebPPicture* const pic) {
   const int use_argb = pic->use_argb;
@@ -100,7 +129,6 @@ int UtilSaveOutput(const WebPDecBuffer* const buffer,
 
   fout = fopen(out_file, "wb");
   if (!fout) {
-    fprintf(stderr, "Error opening output file %s\n", out_file);
     return 0;
   }
 
@@ -118,10 +146,13 @@ int UtilSaveOutput(const WebPDecBuffer* const buffer,
     ok &= UtilWritePGM(fout, buffer);
   } else if (format == ALPHA_PLANE_ONLY) {
     ok &= UtilWriteAlphaPlane(fout, buffer);
+  } else {
+    ok = 0;
   }
 
-  if (fout) {
-    fclose(fout);
+  // fclose flushes buffered data, so it can also fail (for example, disk full)
+  if (fclose(fout) != 0) {
+    ok = 0;
   }
   return ok;
 }
@@ -133,7 +164,7 @@ int UtilReadFile(const char* const file_name,
                    const uint8_t** data, size_t* data_size) {
   int ok;
   void* file_data;
-  size_t file_size;
+  long file_size;
   FILE* in;
 
   if (file_name == NULL || data == NULL || data_size == NULL) return 0;
@@ -142,25 +173,28 @@ int UtilReadFile(const char* const file_name,
 
   in = fopen(file_name, "rb");
   if (in == NULL) {
-    fprintf(stderr, "cannot open input file '%s'\n", file_name);
     return 0;
   }
-  fseek(in, 0, SEEK_END);
-  file_size = ftell(in);
-  fseek(in, 0, SEEK_SET);
-  file_data = malloc(file_size);
-  if (file_data == NULL) return 0;
-  ok = (fread(file_data, file_size, 1, in) == 1);
+  if (fseek(in, 0, SEEK_END) != 0 ||
+      (file_size = ftell(in)) <= 0 ||
+      fseek(in, 0, SEEK_SET) != 0) {
+    fclose(in);
+    return 0;
+  }
+  file_data = malloc((size_t)file_size);
+  if (file_data == NULL) {
+    fclose(in);
+    return 0;
+  }
+  ok = (fread(file_data, (size_t)file_size, 1, in) == 1);
   fclose(in);
 
   if (!ok) {
-    fprintf(stderr, "Could not read %zu bytes of data from file %s\n",
-            file_size, file_name);
     free(file_data);
     return 0;
   }
   *data = (uint8_t*)file_data;
-  *data_size = file_size;
+  *data_size = (size_t)file_size;
   return 1;
 }
 

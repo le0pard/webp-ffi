@@ -1,4 +1,5 @@
 #include "./jpegdec.h"
+#include "./util.h"
 
 #include <stdio.h>
 #include <jpeglib.h>
@@ -13,20 +14,29 @@ struct my_error_mgr {
 
 static void my_error_exit(j_common_ptr dinfo) {
   struct my_error_mgr* myerr = (struct my_error_mgr*) dinfo->err;
-  (*dinfo->err->output_message) (dinfo);
   longjmp(myerr->setjmp_buffer, 1);
+}
+
+// libjpeg prints errors and warnings to stderr by default. A library should
+// stay quiet.
+static void my_output_message(j_common_ptr dinfo) {
+  (void)dinfo;
 }
 
 int UtilReadJPEG(FILE* in_file, WebPPicture* const pic) {
   int ok = 0;
   int stride, width, height;
-  uint8_t* rgb = NULL;
+  size_t rgb_size;
+  // 'rgb' changes after setjmp(), so it must be volatile to keep its value
+  // when libjpeg jumps back to the error handler.
+  uint8_t* volatile rgb = NULL;
   struct jpeg_decompress_struct dinfo;
   struct my_error_mgr jerr;
   JSAMPROW buffer[1];
 
   dinfo.err = jpeg_std_error(&jerr.pub);
   jerr.pub.error_exit = my_error_exit;
+  jerr.pub.output_message = my_output_message;
 
   if (setjmp(jerr.setjmp_buffer)) {
  Error:
@@ -47,19 +57,22 @@ int UtilReadJPEG(FILE* in_file, WebPPicture* const pic) {
     goto Error;
   }
 
-  width = dinfo.output_width;
-  height = dinfo.output_height;
-  stride = dinfo.output_width * dinfo.output_components * sizeof(*rgb);
+  if (!UtilCheckImageSize(dinfo.output_width, dinfo.output_height,
+                          dinfo.output_components, &stride, &rgb_size)) {
+    goto Error;
+  }
+  width = (int)dinfo.output_width;
+  height = (int)dinfo.output_height;
 
-  rgb = (uint8_t*)malloc(stride * height);
+  rgb = (uint8_t*)malloc(rgb_size);
   if (rgb == NULL) {
-    goto End;
+    goto Error;
   }
   buffer[0] = (JSAMPLE*)rgb;
 
   while (dinfo.output_scanline < dinfo.output_height) {
     if (jpeg_read_scanlines(&dinfo, buffer, 1) != 1) {
-      goto End;
+      goto Error;
     }
     buffer[0] += stride;
   }
@@ -71,7 +84,6 @@ int UtilReadJPEG(FILE* in_file, WebPPicture* const pic) {
   pic->width = width;
   pic->height = height;
   ok = WebPPictureImportRGB(pic, rgb, stride);
-  if (!ok) goto Error;
 
  End:
   free(rgb);

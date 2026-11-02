@@ -6,7 +6,7 @@ module WebP
     end
 
     def encode_pointer
-      options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpEncodeConfig.size, false
+      options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpEncodeConfig.size, true
       options_struct = C::FfiWebpEncodeConfig.new options_pointer
       [:lossless, :near_lossless, :method, :target_size, :target_PSNR, :segments,
         :sns_strength, :filter_strength, :filter_sharpness,
@@ -24,15 +24,16 @@ module WebP
     end
 
     def decode_pointer
-      options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpDecodeConfig.size, false
+      options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpDecodeConfig.size, true
       options_struct = C::FfiWebpDecodeConfig.new options_pointer
       decode_default(options_struct)
       # options
       if @user_options[:output_format] && [:png, :pam, :ppm, :pgm, :bmp, :tiff, :yuv, :alpha_plane_only].include?(@user_options[:output_format])
         options_struct[:output_format] = C::OutputFileFormat[@user_options[:output_format]]
       end
+      # set every flag explicitly, so C never reads a field we did not write
       [:bypass_filtering, :no_fancy_upsampling, :use_threads].each do |key|
-        options_struct[key] = 1 if @user_options[key] && true == @user_options[key]
+        options_struct[key] = true == @user_options[key] ? 1 : 0
       end
       [:crop_x, :crop_y, :crop_w,
         :crop_h, :resize_w, :resize_h].each do |key|

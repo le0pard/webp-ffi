@@ -108,6 +108,22 @@ describe WebP do
         expect(WebP.encode(in_filename, out_filename)).to be_truthy
       end
     end
+    it "multi-page tif image uses the first page" do
+      in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/multipage.tif"))
+      out_filename = File.expand_path(File.join(@out_dir, "multipage.tif.webp"))
+      expect(WebP.encode(in_filename, out_filename)).to be_truthy
+      expect(WebP.webp_size(File.binread(out_filename))).to eq([40, 30])
+    end
+    it "near_lossless produces a lossless image", if: Gem::Version.new(WebP.encoder_version) >= Gem::Version.new("0.5.0") do
+      in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/1.png"))
+      lossy_filename = File.expand_path(File.join(@out_dir, "1_lossy.png.webp"))
+      near_filename = File.expand_path(File.join(@out_dir, "1_near.png.webp"))
+      WebP.encode(in_filename, lossy_filename)
+      WebP.encode(in_filename, near_filename, near_lossless: 60)
+      # lossless WebP files use a "VP8L" chunk right after the RIFF header
+      expect(File.binread(near_filename, 4, 12)).to eq("VP8L")
+      expect(File.binread(near_filename)).not_to eq(File.binread(lossy_filename))
+    end
     factories[:webp].each do |image|
       it "raise EncoderError on #{image}.webp image" do
         in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/#{image}.webp"))
