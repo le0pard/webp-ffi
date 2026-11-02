@@ -161,7 +161,6 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [source, native]
     runs-on: ubuntu-latest
-    # must match the trusted publisher settings on RubyGems.org
     environment: rubygems
     permissions:
       contents: read
