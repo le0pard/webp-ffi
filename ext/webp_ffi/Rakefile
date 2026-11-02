@@ -1,6 +1,30 @@
 require 'ffi-compiler/compile_task'
 
+# Homebrew installs to /opt/homebrew on Apple Silicon and /usr/local on Intel;
+# MacPorts uses /opt/local. pkg-config covers other layouts when available.
+def library_prefixes
+  prefixes = []
+  brew_prefix = `brew --prefix 2>/dev/null`.strip rescue ''
+  prefixes << brew_prefix unless brew_prefix.empty?
+  prefixes.concat(%w[/opt/homebrew /usr/local /opt/local])
+  prefixes.uniq.select { |prefix| File.directory?(File.join(prefix, 'include')) }
+end
+
+def pkg_config(flag)
+  `pkg-config #{flag} libwebp 2>/dev/null`.strip rescue ''
+end
+
 FFI::Compiler::CompileTask.new('webp_ffi') do |c|
+  library_prefixes.each do |prefix|
+    c.add_include_path(File.join(prefix, 'include'))
+    lib_path = File.join(prefix, 'lib')
+    c.ldflags << "-L#{lib_path}" if File.directory?(lib_path)
+  end
+  pkg_cflags = pkg_config('--cflags-only-I')
+  pkg_ldflags = pkg_config('--libs-only-L')
+  c.cflags << pkg_cflags unless pkg_cflags.empty?
+  c.ldflags << pkg_ldflags unless pkg_ldflags.empty?
+
   c.have_header?('stdio.h', '/usr/local/include')
   c.have_func?('puts')
   c.have_library?('z')
