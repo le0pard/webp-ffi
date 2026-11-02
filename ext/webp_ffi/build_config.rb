@@ -13,10 +13,12 @@ module WebPFFI
     # MacPorts uses /opt/local. Libraries anywhere else need C_FLAGS and LD_FLAGS.
     LIBRARY_PREFIXES = %w[/opt/homebrew /usr/local /opt/local].freeze
 
-    Dependency = Struct.new(:name, :header, :library, :code, keyword_init: true)
+    # 'requirement' is an optional preprocessor condition, such as a version check
+    Dependency = Struct.new(:name, :header, :library, :code, :requirement, keyword_init: true)
 
     DEPENDENCIES = [
-      Dependency.new(name: "libwebp", header: "webp/encode.h", library: "webp", code: "WebPGetEncoderVersion();"),
+      Dependency.new(name: "libwebp 1.0.0 or newer", header: "webp/encode.h", library: "webp", code: "WebPGetEncoderVersion();",
+                     requirement: "WEBP_ENCODER_ABI_VERSION >= 0x020e"),
       Dependency.new(name: "libpng", header: "png.h", library: "png", code: "png_access_version_number();"),
       Dependency.new(name: "libjpeg", header: "jpeglib.h", library: "jpeg", code: "struct jpeg_error_mgr err; jpeg_std_error(&err);"),
       Dependency.new(name: "libtiff", header: "tiffio.h", library: "tiff", code: "TIFFGetVersion();"),
@@ -90,10 +92,11 @@ module WebPFFI
     def links?(dependency)
       Dir.mktmpdir("webp-ffi-check") do |dir|
         source = File.join(dir, "check.c")
+        requirement = dependency.requirement ? "#if !(#{dependency.requirement})\n#error too old\n#endif\n" : ""
         File.write(source, <<~C)
           #include <stdio.h>
           #include <#{dependency.header}>
-          int main(void) { #{dependency.code} return 0; }
+          #{requirement}int main(void) { #{dependency.code} return 0; }
         C
         command = compiler + split(@env['CFLAGS']) + @cflags +
                   [source, "-o", File.join(dir, "check")] +

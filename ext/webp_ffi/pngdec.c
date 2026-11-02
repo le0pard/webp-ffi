@@ -19,7 +19,135 @@ static void PNGAPI warning_function(png_structp png, png_const_charp dummy) {
   (void)dummy;
 }
 
-int UtilReadPNG(FILE* in_file, WebPPicture* const pic, int keep_alpha) {
+// The metadata code below is based on libwebp's imageio/pngdec.c.
+
+// Converts pairs of hex digits, possibly split by newlines, to 'length' bytes.
+// Returns NULL for other characters or when there are fewer bytes.
+static uint8_t* HexStringToBytes(const char* hexstring, size_t length) {
+  const char* src = hexstring;
+  size_t actual_length = 0;
+  uint8_t* const raw_data = (uint8_t*)malloc(length > 0 ? length : 1);
+  uint8_t* dst;
+
+  if (raw_data == NULL) return NULL;
+  for (dst = raw_data; actual_length < length && *src != '\0'; ++src) {
+    char* end;
+    char value[3];
+    if (*src == '\n') continue;
+    value[0] = *src++;
+    value[1] = *src;
+    value[2] = '\0';
+    *dst++ = (uint8_t)strtol(value, &end, 16);
+    if (end != value + 2) break;
+    ++actual_length;
+  }
+  if (actual_length != length) {
+    free(raw_data);
+    return NULL;
+  }
+  return raw_data;
+}
+
+// ImageMagick and ExifTool store metadata in text chunks as "raw profiles":
+// "\n<name>\n<length>\n<hex data>\n".
+static int ProcessRawProfile(const char* profile, size_t profile_length,
+                             MetadataPayload* const payload) {
+  const char* src = profile;
+  char* end;
+  long length;
+
+  if (profile == NULL || profile_length == 0 || *src != '\n') return 0;
+  ++src;
+  while (*src != '\0' && *src++ != '\n') {}  // skip the profile name
+  length = strtol(src, &end, 10);
+  if (*end != '\n') return 0;
+  ++end;
+  // two hex digits per byte, so a longer length cannot be right
+  if (length < 0 || (size_t)length > profile_length / 2) return 0;
+  payload->bytes = HexStringToBytes(end, (size_t)length);
+  if (payload->bytes == NULL) return 0;
+  payload->size = (size_t)length;
+  return 1;
+}
+
+static int CopyText(const char* text, size_t length, MetadataPayload* const payload) {
+  return MetadataCopy(text, length, payload);
+}
+
+static const struct {
+  const char* key;
+  int (*process)(const char* text, size_t length, MetadataPayload* const payload);
+  int kind;  // METADATA_* flag
+} kPNGTextMetadata[] = {
+  // https://exiftool.org/TagNames/PNG.html#TextualData
+  { "Raw profile type exif", ProcessRawProfile, METADATA_EXIF },
+  { "Raw profile type xmp",  ProcessRawProfile, METADATA_XMP },
+  // ExifTool puts EXIF data in an APP1 profile too; ImageMagick in "app1".
+  { "Raw profile type APP1", ProcessRawProfile, METADATA_EXIF },
+  { "Raw profile type app1", ProcessRawProfile, METADATA_EXIF },
+  // XMP Specification Part 3, Section 3 #PNG
+  { "XML:com.adobe.xmp",     CopyText,          METADATA_XMP },
+  { NULL, NULL, 0 }
+};
+
+// Looks for metadata before and after the image data, preferring what comes
+// first. Like libwebp, an eXIf chunk wins over EXIF in text chunks.
+static int ExtractMetadataFromPNG(png_structp png, png_infop info,
+                                  png_infop end_info, Metadata* const metadata) {
+  int p;
+  for (p = 0; p < 2; ++p) {
+    png_infop const head = (p == 0) ? info : end_info;
+    png_textp text = NULL;
+    const png_uint_32 count = png_get_text(png, head, &text, NULL);
+    png_uint_32 i;
+
+#ifdef PNG_eXIf_SUPPORTED
+    {
+      png_bytep exif = NULL;
+      png_uint_32 length = 0;
+      if (png_get_eXIf_1(png, head, &length, &exif) == PNG_INFO_eXIf &&
+          !MetadataCopy(exif, length, &metadata->exif)) {
+        return 0;
+      }
+    }
+#endif
+
+    for (i = 0; i < count; ++i, ++text) {
+      int j;
+      for (j = 0; kPNGTextMetadata[j].key != NULL; ++j) {
+        if (text->key != NULL && !strcmp(text->key, kPNGTextMetadata[j].key)) {
+          MetadataPayload* const payload =
+              (kPNGTextMetadata[j].kind == METADATA_EXIF) ? &metadata->exif : &metadata->xmp;
+          // iTXt chunks keep their length in a separate field
+          const size_t length = (text->compression == PNG_ITXT_COMPRESSION_NONE ||
+                                 text->compression == PNG_ITXT_COMPRESSION_zTXt)
+                                    ? text->itxt_length : text->text_length;
+          // the first one wins; like cwebp, a broken one fails the read
+          if (payload->bytes == NULL &&
+              !kPNGTextMetadata[j].process(text->text, length, payload)) {
+            return 0;
+          }
+          break;
+        }
+      }
+    }
+
+    {
+      png_charp name;
+      int compression_type;
+      png_bytep profile;
+      png_uint_32 length;
+      if (png_get_iCCP(png, head, &name, &compression_type, &profile, &length) == PNG_INFO_iCCP &&
+          !MetadataCopy(profile, length, &metadata->iccp)) {
+        return 0;
+      }
+    }
+  }
+  return 1;
+}
+
+int UtilReadPNG(FILE* in_file, WebPPicture* const pic, int keep_alpha,
+                Metadata* const metadata) {
   // Locals that change after setjmp() must be volatile, otherwise their values
   // are undefined when libpng jumps back to the error handler.
   volatile png_structp png = NULL;
@@ -96,6 +224,9 @@ int UtilReadPNG(FILE* in_file, WebPPicture* const pic, int keep_alpha) {
     }
   }
   png_read_end(png, end_info);
+  if (metadata != NULL && !ExtractMetadataFromPNG(png, info, end_info, metadata)) {
+    goto Error;
+  }
   png_destroy_read_struct((png_structpp)&png, (png_infopp)&info,
                           (png_infopp)&end_info);
 

@@ -86,8 +86,8 @@ describe WebP do
     it "returns nil for nil" do
       expect(WebP.webp_size(nil)).to be_nil
     end
-    it "raise TypeError for data that is not a string" do
-      expect { WebP.webp_size(12345) }.to raise_error(TypeError, /expected image data as a String, got Integer/)
+    it "raise TypeError for data that is not a string", :outside_type_check do
+      expect { WebP.webp_size(12345) }.to raise_error(TypeError, /expected image data as a String or an IO, got Integer/)
     end
   end
 

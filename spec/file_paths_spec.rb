@@ -32,7 +32,7 @@ describe "WebP file arguments" do
       .to raise_error(WebP::EncoderError, "Cannot read input picture file: #{input}")
   end
 
-  it "rejects nil instead of passing it to C" do
+  it "rejects nil instead of passing it to C", :outside_type_check do
     expect { WebP.encode(nil, @dir.join("out.webp")) }.to raise_error(TypeError)
     expect { WebP.decode(factory_path("1.webp"), nil) }.to raise_error(TypeError)
   end

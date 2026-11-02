@@ -14,7 +14,8 @@ jobs:
     strategy:
       matrix:
         ruby: ['3.2', '3.3', '3.4', '4.0']
-        libwebp: ['0.4.4', '1.0.2', '1.6.0']
+        # 1.0.0 is the oldest supported libwebp
+        libwebp: ['1.0.0', '1.6.0']
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -43,6 +44,8 @@ jobs:
           echo "C_FLAGS=-I$HOME/opt/include" >> $GITHUB_ENV
           echo "LD_FLAGS=-L$HOME/opt/lib" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib:$HOME/opt/lib" >> $GITHUB_ENV
+          # cwebp from the same libwebp build, for the byte-for-byte comparison specs
+          echo "$HOME/opt/bin" >> $GITHUB_PATH
 
       - name: Build package
         run: |
@@ -82,3 +85,7 @@ jobs:
       - name: Test package
         run: |
           bundle exec rake spec
+
+      - name: Check type signatures at runtime
+        run: |
+          bundle exec rake spec:types

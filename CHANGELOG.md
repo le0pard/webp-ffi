@@ -3,6 +3,7 @@
 Breaking changes:
 
 * Require Ruby 3.2 or newer
+* The source gem requires libwebp 1.0.0 or newer
 * Raise `ArgumentError` for unknown options (they were ignored), with a suggestion for typos
 * Raise `ArgumentError` for an unknown `output_format` instead of silently writing PNG
 * Raise `ArgumentError` for option values that are not numbers
@@ -16,6 +17,13 @@ Breaking changes:
 New:
 
 * `WebP.encode_data` and `WebP.decode_data` encode and decode binary strings in memory
+* `WebP.info` returns the size, format (lossy, lossless or mixed), alpha, animation and metadata of WebP data
+* `WebP.encode_rgba` and `WebP.decode_rgba` work with raw RGBA pixels
+* Copy ICC, EXIF and XMP metadata from PNG, JPEG and TIFF input with the `metadata` option, byte for byte like `cwebp -metadata`
+* New encode options: `preset`, `level` (lossless preset), `image_hint`, `exact`, `use_sharp_yuv`, `thread_level`, `low_memory` and `emulate_jpeg_size`
+* The in-memory, raw pixel and info methods also accept an IO
+* `WebP::Error` is the base class of every error; encoder and decoder errors carry the error `code` and libwebp's `reason`, which is also in the message
+* RBS type signatures in `sig/webp.rbs`
 * Prebuilt gems for Linux (glibc and musl, x86_64 and aarch64) and macOS 11+ (arm64 and x86_64) with libwebp 1.6.0, libpng, libjpeg-turbo, libtiff and zlib included
 * Release the Global VM Lock during encode and decode, so other Ruby threads keep running
 * Accept `Pathname` and other objects with `#to_path` as file names
@@ -24,6 +32,8 @@ New:
 
 Fixes:
 
+* `target_size` and `target_PSNR` had no effect, because libwebp needs more than one pass; like cwebp, 6 passes are used now
+* JPEG and TIFF input was converted to YUV before lossless or sharp YUV encoding, so lossless output was not exact
 * Check image sizes before allocating memory in the PNG, JPEG and TIFF readers
 * Fix memory leaks when reading broken PNG and JPEG files
 * Fix wrong error message when the decode input file cannot be read

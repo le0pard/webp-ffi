@@ -101,8 +101,25 @@ const char* UtilTIFFVersion(void) {
   return TIFFGetVersion();
 }
 
+static int ExtractMetadataFromTIFF(TIFF* const tif, Metadata* const metadata) {
+  uint32_t length = 0;
+  void* data = NULL;
+  if (TIFFGetField(tif, TIFFTAG_ICCPROFILE, &length, &data) &&
+      !MetadataCopy(data, length, &metadata->iccp)) {
+    return 0;
+  }
+  length = 0;
+  data = NULL;
+  if (TIFFGetField(tif, TIFFTAG_XMLPACKET, &length, &data) &&
+      !MetadataCopy(data, length, &metadata->xmp)) {
+    return 0;
+  }
+  return 1;
+}
+
 int UtilReadTIFF(FILE* const in_file,
-                    WebPPicture* const pic, int keep_alpha) {
+                    WebPPicture* const pic, int keep_alpha,
+                    Metadata* const metadata) {
   TIFF* const tif = OpenTIFF(in_file);
   uint32_t width, height;
   uint32_t* raster;
@@ -118,7 +135,8 @@ int UtilReadTIFF(FILE* const in_file,
   if (!TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width) ||
       !TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height) ||
       !UtilCheckImageSize(width, height, sizeof(*raster),
-                          &stride, &raster_size)) {
+                          &stride, &raster_size) ||
+      (metadata != NULL && !ExtractMetadataFromTIFF(tif, metadata))) {
     TIFFClose(tif);
     return 0;
   }

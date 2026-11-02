@@ -95,35 +95,23 @@ static InputFileFormat GetImageType(FILE* in_file) {
 }
 
 int UtilReadPictureFile(FILE* const in_file, WebPPicture* const pic,
-                        int keep_alpha) {
+                        int keep_alpha, Metadata* const metadata) {
   int ok = 0;
 
   if (pic->width == 0 || pic->height == 0) {
     // If no size specified, try to decode it as PNG/JPEG/TIFF (as appropriate).
     const InputFileFormat format = GetImageType(in_file);
     if (format == iPNG_) {
-      ok = UtilReadPNG(in_file, pic, keep_alpha);
+      ok = UtilReadPNG(in_file, pic, keep_alpha, metadata);
     } else if (format == iJPEG_) {
-      ok = UtilReadJPEG(in_file, pic);
+      ok = UtilReadJPEG(in_file, pic, metadata);
     } else if (format == iTIFF_) {
-      ok = UtilReadTIFF(in_file, pic, keep_alpha);
+      ok = UtilReadTIFF(in_file, pic, keep_alpha, metadata);
     }
   } else {
     // If image size is specified, infer it as YUV format.
     ok = UtilReadYUV(in_file, pic);
   }
-  return ok;
-}
-
-int UtilReadPicture(const char* const filename, WebPPicture* const pic,
-                       int keep_alpha) {
-  int ok;
-  FILE* in_file = fopen(filename, "rb");
-  if (in_file == NULL) {
-    return 0;
-  }
-  ok = UtilReadPictureFile(in_file, pic, keep_alpha);
-  fclose(in_file);
   return ok;
 }
 

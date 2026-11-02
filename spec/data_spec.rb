@@ -74,8 +74,8 @@ describe "WebP in-memory encode and decode" do
         .to raise_error(WebP::EncoderError, "Cannot crop picture")
     end
 
-    it "raises TypeError for data that is not a string" do
-      expect { WebP.encode_data(nil) }.to raise_error(TypeError, /expected image data as a String, got NilClass/)
+    it "raises TypeError for data that is not a string", :outside_type_check do
+      expect { WebP.encode_data(nil) }.to raise_error(TypeError, /expected image data as a String or an IO, got NilClass/)
     end
 
     it "checks the options" do
@@ -110,21 +110,42 @@ describe "WebP in-memory encode and decode" do
     end
 
     it "raises for data that is not WebP" do
-      expect { WebP.decode_data(factory_data("1.png")) }.to raise_error(WebP::DecoderError, "Invalid webp image")
+      expect { WebP.decode_data(factory_data("1.png")) }.to raise_error(
+        an_instance_of(WebP::DecoderError).and(having_attributes(
+          message: "Invalid webp image (the data is not a valid WebP bitstream)", code: 2, reason: :bitstream_error)))
     end
 
     it "raises for empty data" do
-      expect { WebP.decode_data("") }.to raise_error(WebP::DecoderError, "Invalid webp image")
+      expect { WebP.decode_data("") }
+        .to raise_error(WebP::DecoderError, "Invalid webp image (not enough data, the image may be truncated)")
     end
 
     it "raises for options the image cannot use" do
-      expect { WebP.decode_data(factory_data("1.webp"), crop_w: 30_000) }
-        .to raise_error(WebP::DecoderError, "Decoding failed")
+      expect { WebP.decode_data(factory_data("1.webp"), crop_w: 30_000) }.to raise_error(
+        an_instance_of(WebP::DecoderError).and(having_attributes(
+          message: "Decoding failed (invalid parameter, for example a crop outside the picture)", reason: :invalid_param)))
     end
 
     it "raises for an unknown output format" do
       expect { WebP.decode_data(factory_data("1.webp"), output_format: :jpg) }
         .to raise_error(ArgumentError, /unknown output_format :jpg/)
     end
+  end
+end
+
+describe "WebP data from an IO" do
+  require 'stringio'
+
+  it "reads image data from files and StringIO" do
+    webp = File.open(factory_path("1.png"), "rb") { |file| WebP.encode_data(file) }
+    expect(WebP.webp_size(StringIO.new(webp))).to eq([400, 301])
+    expect(WebP.decode_data(StringIO.new(webp)).byteslice(1, 3)).to eq("PNG")
+    expect(WebP.decode_rgba(StringIO.new(webp)).width).to eq(400)
+  end
+
+  it "reads from the current position" do
+    io = StringIO.new("junk" + File.binread(factory_path("1.webp")))
+    io.read(4)
+    expect(WebP.webp_size(io)).to eq([400, 301])
   end
 end

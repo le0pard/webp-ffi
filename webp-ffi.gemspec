@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
 
   # only what users need: specs and test images stay in the repository
   spec.files         = Dir.chdir(__dir__) do
-    Dir["lib/**/*.rb", "ext/webp_ffi/*.{c,h,rb}", "ext/webp_ffi/Rakefile",
+    Dir["lib/**/*.rb", "sig/**/*.rbs", "ext/webp_ffi/*.{c,h,rb}", "ext/webp_ffi/Rakefile",
         "README.md", "CHANGELOG.md", "LICENSE.txt"]
   end
   spec.require_paths = ["lib"]
@@ -29,4 +29,5 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", ">= 1.2"
   spec.add_development_dependency "rspec", ">= 3"
+  spec.add_development_dependency "rbs"
 end

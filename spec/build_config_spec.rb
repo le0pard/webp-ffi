@@ -84,6 +84,22 @@ describe WebPFFI::BuildConfig, :source_tree do
         /cannot find: libmissing \(webp_ffi_missing\.h, -lwebpffimissing\).*brew install.*C_FLAGS=/m)
     end
 
+    it "checks version requirements" do
+      newer = dependency(name: "c", header: "limits.h", library: "m", code: "", requirement: "INT_MAX > 0")
+      older = dependency(name: "c 99", header: "limits.h", library: "m", code: "", requirement: "INT_MAX < 0")
+      config = described_class.new(env: {}, prefixes: [], dependencies: [newer, older])
+      expect(config.missing_dependencies).to eq([older])
+    end
+
+    it "asks for libwebp 1.0.0 or newer" do
+      expect(described_class::DEPENDENCIES.first.name).to eq("libwebp 1.0.0 or newer")
+    end
+
+    it "treats a missing compiler as missing libraries" do
+      config = described_class.new(env: { "CC" => "/nonexistent/cc" }, prefixes: [])
+      expect(config.missing_dependencies.map(&:name)).to include("libwebp 1.0.0 or newer")
+    end
+
     it "uses C_FLAGS to find headers" do
       FileUtils.mkdir_p(File.join(@dir, "inc"))
       File.write(File.join(@dir, "inc", "webp_ffi_check.h"), "static int webp_ffi_check(void) { return 0; }\n")

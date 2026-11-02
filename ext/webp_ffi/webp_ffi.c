@@ -3,8 +3,14 @@
 #include <string.h>
 
 // utils
+#include "./metadata.h"
 #include "./util.h"
 #include "./webp_ffi.h"
+
+// libwebp 1.0.0 is the oldest supported version (encoder ABI 0x020e)
+#if WEBP_ENCODER_ABI_VERSION < 0x020e || WEBP_DECODER_ABI_VERSION < 0x0208
+#error "webp-ffi needs libwebp 1.0.0 or newer"
+#endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -40,7 +46,6 @@ static int EncodeWriter(const uint8_t* data, size_t data_size,
 
 // main functions
 
-// Versions are packed as 0xMMmmpp (major, minor, patch).
 int decoder_version(void) {
   return WebPGetDecoderVersion();
 }
@@ -57,7 +62,20 @@ int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height
   }
 }
 
-// Frees the output of webp_encode_data and webp_decode_data.
+int webp_get_features(const uint8_t* data, size_t data_size,
+                      FfiWebpFeatures* features) {
+  WebPBitstreamFeatures bitstream;
+  const VP8StatusCode status = WebPGetFeatures(data, data_size, &bitstream);
+  if (status != VP8_STATUS_OK) return (int)status;
+  features->width = bitstream.width;
+  features->height = bitstream.height;
+  features->has_alpha = bitstream.has_alpha;
+  features->has_animation = bitstream.has_animation;
+  features->format = bitstream.format;
+  return 0;
+}
+
+// Frees the output of the in-memory functions.
 void webp_free_data(uint8_t* data) {
   free(data);
 }
@@ -69,17 +87,27 @@ static int SetupEncoder(const FfiWebpEncodeConfig* const encode_config,
     return ENCODE_VERSION_MISMATCH;
   }
 
+  // presets first, so the options below can still change their settings
+  if (encode_config->preset >= WEBP_PRESET_DEFAULT && encode_config->preset <= WEBP_PRESET_TEXT) {
+    const float quality = (encode_config->quality >= 0 && encode_config->quality <= 100)
+                              ? encode_config->quality : 75.f;
+    if (!WebPConfigPreset(config, (WebPPreset)encode_config->preset, quality)) {
+      return ENCODE_VERSION_MISMATCH;
+    }
+  }
+  if (encode_config->lossless_level >= 0 && encode_config->lossless_level <= 9) {
+    if (!WebPConfigLosslessPreset(config, encode_config->lossless_level)) {
+      return ENCODE_INVALID_CONFIG;
+    }
+  }
+
   if (encode_config->lossless == 0 || encode_config->lossless == 1){
     config->lossless = encode_config->lossless;
   }
-
-#if WEBP_ENCODER_ABI_VERSION >= 0x0209  // near_lossless was added in libwebp 0.5.0
   if (encode_config->near_lossless >= 0 && encode_config->near_lossless <= 100){
     config->near_lossless = encode_config->near_lossless;
     config->lossless = 1;  // use near-lossless only with lossless
   }
-#endif
-
   if (encode_config->quality >= 0 && encode_config->quality <= 100){
     config->quality = encode_config->quality;
   }
@@ -134,11 +162,42 @@ static int SetupEncoder(const FfiWebpEncodeConfig* const encode_config,
   if (encode_config->partition_limit >= 0 && encode_config->partition_limit <= 100){
     config->partition_limit = encode_config->partition_limit;
   }
+  if (encode_config->image_hint >= WEBP_HINT_DEFAULT && encode_config->image_hint < WEBP_HINT_LAST){
+    config->image_hint = (WebPImageHint)encode_config->image_hint;
+  }
+  if (encode_config->exact == 0 || encode_config->exact == 1){
+    config->exact = encode_config->exact;
+  }
+  if (encode_config->use_sharp_yuv == 0 || encode_config->use_sharp_yuv == 1){
+    config->use_sharp_yuv = encode_config->use_sharp_yuv;
+  }
+  if (encode_config->thread_level == 0 || encode_config->thread_level == 1){
+    config->thread_level = encode_config->thread_level;
+  }
+  if (encode_config->low_memory == 0 || encode_config->low_memory == 1){
+    config->low_memory = encode_config->low_memory;
+  }
+  if (encode_config->emulate_jpeg_size == 0 || encode_config->emulate_jpeg_size == 1){
+    config->emulate_jpeg_size = encode_config->emulate_jpeg_size;
+  }
   // a size means the input is raw YUV
   if ((encode_config->width | encode_config->height) > 0){
     picture->width = encode_config->width;
     picture->height = encode_config->height;
   }
+
+  // The rules below come from libwebp's examples/cwebp.c.
+  // A target size or PSNR is only searched for with more than one pass.
+  if ((config->target_size > 0 || config->target_PSNR > 0) && config->pass == 1) {
+    config->pass = 6;
+  }
+  // Keep RGB samples when the encoding needs them; otherwise the readers
+  // convert to YUV right away, which loses detail before lossless encoding
+  // and makes sharp YUV conversion impossible.
+  picture->use_argb = config->lossless || config->use_sharp_yuv ||
+                      config->preprocessing > 0 ||
+                      (encode_config->crop_w | encode_config->crop_h) > 0 ||
+                      (encode_config->resize_w | encode_config->resize_h) > 0;
 
   if (!WebPValidateConfig(config)) {
     return ENCODE_INVALID_CONFIG;
@@ -146,66 +205,112 @@ static int SetupEncoder(const FfiWebpEncodeConfig* const encode_config,
   return 0;
 }
 
-// Crops, resizes and encodes 'picture', writing the WebP data to 'out'.
-static int EncodePicture(const FfiWebpEncodeConfig* const encode_config,
-                         const WebPConfig* const config,
-                         WebPPicture* const picture, FILE* const out) {
+// Crops, resizes and encodes 'picture'. On success '*webp' holds the WebP
+// file (free it with free()).
+static int EncodeToMemory(const FfiWebpEncodeConfig* const encode_config,
+                          const WebPConfig* const config, WebPPicture* const picture,
+                          char** const webp, size_t* const webp_size, int* const detail) {
+  int result = 0;
+  FILE* const out = open_memstream(webp, webp_size);
+  if (out == NULL) return ENCODE_OUT_OF_MEMORY;
+
   picture->writer = EncodeWriter;
   picture->custom_ptr = (void*)out;
-
-  if ((encode_config->crop_w | encode_config->crop_h) > 0){
-    if (!WebPPictureView(picture, encode_config->crop_x, encode_config->crop_y,
-                         encode_config->crop_w, encode_config->crop_h, picture)) {
-      return ENCODE_CANNOT_CROP;
-    }
+  if ((encode_config->crop_w | encode_config->crop_h) > 0 &&
+      !WebPPictureView(picture, encode_config->crop_x, encode_config->crop_y,
+                       encode_config->crop_w, encode_config->crop_h, picture)) {
+    result = ENCODE_CANNOT_CROP;
+  } else if ((encode_config->resize_w | encode_config->resize_h) > 0 &&
+             !WebPPictureRescale(picture, encode_config->resize_w, encode_config->resize_h)) {
+    result = ENCODE_CANNOT_RESIZE;
+  } else if (!WebPEncode(config, picture)) {
+    result = ENCODE_FAILED;
   }
+  if (result != 0) *detail = (int)picture->error_code;
 
-  if ((encode_config->resize_w | encode_config->resize_h) > 0) {
-    if (!WebPPictureRescale(picture, encode_config->resize_w, encode_config->resize_h)) {
-      return ENCODE_CANNOT_RESIZE;
-    }
+  // '*webp' and '*webp_size' are final only after fclose
+  if (fclose(out) != 0 && result == 0) result = ENCODE_OUT_OF_MEMORY;
+  if (result != 0) {
+    free(*webp);
+    *webp = NULL;
   }
-
-  if (!WebPEncode(config, picture)) {
-    return ENCODE_FAILED;
-  }
-  return 0;
+  return result;
 }
 
-int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeConfig *encode_config) {
+// Writes the WebP file with the requested metadata to 'out'.
+static int WriteOutput(FILE* const out, const char* const webp, size_t webp_size,
+                       const WebPPicture* const picture, const Metadata* const metadata,
+                       int keep_metadata) {
+  return MetadataWriteWebP(out, (const uint8_t*)webp, webp_size, picture->width,
+                           picture->height, metadata, keep_metadata);
+}
+
+// Reads a picture from 'in', encodes it and writes the WebP file to 'out'.
+static int EncodeStream(FILE* const in, FILE* const out,
+                        const FfiWebpEncodeConfig* const encode_config,
+                        const WebPConfig* const config, WebPPicture* const picture,
+                        int* const detail) {
+  Metadata metadata;
+  char* webp = NULL;
+  size_t webp_size = 0;
+  int result;
+
+  MetadataInit(&metadata);
+  if (!UtilReadPictureFile(in, picture, 1, encode_config->metadata > 0 ? &metadata : NULL)) {
+    result = ENCODE_CANNOT_READ_INPUT;
+  } else {
+    result = EncodeToMemory(encode_config, config, picture, &webp, &webp_size, detail);
+    if (result == 0 && !WriteOutput(out, webp, webp_size, picture, &metadata,
+                                    encode_config->metadata)) {
+      result = ENCODE_FAILED;
+      *detail = VP8_ENC_ERROR_BAD_WRITE;
+    }
+  }
+  free(webp);
+  MetadataFree(&metadata);
+  return result;
+}
+
+int webp_encode(const char *in_file, const char *out_file,
+                const FfiWebpEncodeConfig *encode_config, int* detail) {
   WebPPicture picture;
   WebPConfig config;
+  FILE* in = NULL;
   FILE* out = NULL;
-  int result = SetupEncoder(encode_config, &config, &picture);
+  int result;
 
+  *detail = 0;
+  result = SetupEncoder(encode_config, &config, &picture);
   // after a version mismatch 'picture' is not initialized, so it can't be freed
   if (result == ENCODE_VERSION_MISMATCH) return result;
   if (result != 0) goto End;
 
-  if (!UtilReadPicture(in_file, &picture, 1)) {
+  in = fopen(in_file, "rb");
+  if (in == NULL) {
     result = ENCODE_CANNOT_READ_INPUT;
     goto End;
   }
-
   out = fopen(out_file, "wb");
   if (out == NULL) {
     result = ENCODE_CANNOT_OPEN_OUTPUT;
     goto End;
   }
-  result = EncodePicture(encode_config, &config, &picture, out);
+  result = EncodeStream(in, out, encode_config, &config, &picture, detail);
 
  End:
   WebPPictureFree(&picture);
+  if (in != NULL) fclose(in);
   // fclose flushes buffered data, so it can also fail (for example, disk full)
   if (out != NULL && fclose(out) != 0 && result == 0) {
     result = ENCODE_FAILED;
+    *detail = VP8_ENC_ERROR_BAD_WRITE;
   }
   return result;
 }
 
 int webp_encode_data(const uint8_t* data, size_t data_size,
                      uint8_t** output, size_t* output_size,
-                     const FfiWebpEncodeConfig* encode_config) {
+                     const FfiWebpEncodeConfig* encode_config, int* detail) {
   WebPPicture picture;
   WebPConfig config;
   FILE* in = NULL;
@@ -216,6 +321,7 @@ int webp_encode_data(const uint8_t* data, size_t data_size,
 
   *output = NULL;
   *output_size = 0;
+  *detail = 0;
   result = SetupEncoder(encode_config, &config, &picture);
   if (result == ENCODE_VERSION_MISMATCH) return result;
   if (result != 0) goto End;
@@ -226,36 +332,66 @@ int webp_encode_data(const uint8_t* data, size_t data_size,
   }
   // the readers take a FILE*, so wrap the data in one; "rb" never writes to it
   in = fmemopen((void*)data, data_size, "rb");
-  if (in == NULL) {
-    result = ENCODE_OUT_OF_MEMORY;
-    goto End;
-  }
-  if (!UtilReadPictureFile(in, &picture, 1)) {
-    result = ENCODE_CANNOT_READ_INPUT;
-    goto End;
-  }
-
-  // a FILE* that collects the WebP data in a growing malloc'ed buffer
+  // a FILE* that collects the WebP file in a growing malloc'ed buffer
   out = open_memstream(&buffer, &buffer_size);
-  if (out == NULL) {
+  if (in == NULL || out == NULL) {
     result = ENCODE_OUT_OF_MEMORY;
     goto End;
   }
-  result = EncodePicture(encode_config, &config, &picture, out);
+  result = EncodeStream(in, out, encode_config, &config, &picture, detail);
 
  End:
   WebPPictureFree(&picture);
   if (in != NULL) fclose(in);
-  // 'buffer' and 'buffer_size' are final only after fclose
-  if (out != NULL && fclose(out) != 0 && result == 0) {
-    result = ENCODE_OUT_OF_MEMORY;
-  }
+  if (out != NULL && fclose(out) != 0 && result == 0) result = ENCODE_OUT_OF_MEMORY;
   if (result == 0) {
     *output = (uint8_t*)buffer;
     *output_size = buffer_size;
   } else {
     free(buffer);
   }
+  return result;
+}
+
+int webp_encode_rgba(const uint8_t* rgba, int width, int height,
+                     uint8_t** output, size_t* output_size,
+                     const FfiWebpEncodeConfig* encode_config, int* detail) {
+  WebPPicture picture;
+  WebPConfig config;
+  char* webp = NULL;
+  size_t webp_size = 0;
+  int stride;
+  int result;
+
+  *output = NULL;
+  *output_size = 0;
+  *detail = 0;
+  result = SetupEncoder(encode_config, &config, &picture);
+  if (result == ENCODE_VERSION_MISMATCH) return result;
+  if (result != 0) goto End;
+
+  if (rgba == NULL || width <= 0 || height <= 0 ||
+      !UtilCheckImageSize((uint64_t)width, (uint64_t)height, 4, &stride, NULL)) {
+    result = ENCODE_CANNOT_READ_INPUT;
+    goto End;
+  }
+  picture.width = width;
+  picture.height = height;
+  picture.use_argb = 1;
+  if (!WebPPictureImportRGBA(&picture, rgba, stride)) {
+    result = ENCODE_OUT_OF_MEMORY;
+    *detail = (int)picture.error_code;
+    goto End;
+  }
+  // raw pixels have no metadata, so the encoder output is the whole file
+  result = EncodeToMemory(encode_config, &config, &picture, &webp, &webp_size, detail);
+  if (result == 0) {
+    *output = (uint8_t*)webp;
+    *output_size = webp_size;
+  }
+
+ End:
+  WebPPictureFree(&picture);
   return result;
 }
 
@@ -292,64 +428,83 @@ static int SetupDecoder(const FfiWebpDecodeConfig* const decode_config,
   return 0;
 }
 
-// Decodes 'data' into config->output, in the colorspace that 'format' needs.
-static int DecodeData(const uint8_t* const data, size_t data_size,
-                      OutputFileFormat format, WebPDecoderConfig* const config) {
-  WebPDecBuffer* const output_buffer = &config->output;
-  WebPBitstreamFeatures* const bitstream = &config->input;
-
-  if (data == NULL || data_size == 0 ||
-      WebPGetFeatures(data, data_size, bitstream) != VP8_STATUS_OK) {
-    return DECODE_INVALID_WEBP;
-  }
-
+// The colorspace each output format is written from.
+static int OutputColorspace(OutputFileFormat format, int has_alpha,
+                            WEBP_CSP_MODE* const colorspace) {
   switch (format) {
     case oPNG:
-      output_buffer->colorspace = bitstream->has_alpha ? MODE_RGBA : MODE_RGB;
-      break;
+      *colorspace = has_alpha ? MODE_RGBA : MODE_RGB;
+      return 1;
     case oPAM:
-      output_buffer->colorspace = MODE_RGBA;
-      break;
+      *colorspace = MODE_RGBA;
+      return 1;
     case oPPM:
-      output_buffer->colorspace = MODE_RGB;  // drops alpha for PPM
-      break;
+      *colorspace = MODE_RGB;  // drops alpha for PPM
+      return 1;
     case oBMP:
-      output_buffer->colorspace = bitstream->has_alpha ? MODE_BGRA : MODE_BGR;
-      break;
+      *colorspace = has_alpha ? MODE_BGRA : MODE_BGR;
+      return 1;
     case oTIFF_:    // note: force pre-multiplied alpha
-      output_buffer->colorspace =
-          bitstream->has_alpha ? MODE_rgbA : MODE_RGB;
-      break;
+      *colorspace = has_alpha ? MODE_rgbA : MODE_RGB;
+      return 1;
     case oPGM:
     case oYUV:
-      output_buffer->colorspace = bitstream->has_alpha ? MODE_YUVA : MODE_YUV;
-      break;
+      *colorspace = has_alpha ? MODE_YUVA : MODE_YUV;
+      return 1;
     case ALPHA_PLANE_ONLY:
-      output_buffer->colorspace = MODE_YUVA;
-      break;
+      *colorspace = MODE_YUVA;
+      return 1;
     default:
-      return DECODE_INVALID_FORMAT;
+      return 0;
   }
+}
 
-  if (WebPDecode(data, data_size, config) != VP8_STATUS_OK) {
+// Decodes 'data' into config->output. 'format' picks the colorspace; a
+// negative 'format' decodes to RGBA.
+static int DecodeData(const uint8_t* const data, size_t data_size, int format,
+                      WebPDecoderConfig* const config, int* const detail) {
+  WebPDecBuffer* const output_buffer = &config->output;
+  VP8StatusCode status;
+
+  if (data == NULL || data_size == 0) {
+    *detail = VP8_STATUS_NOT_ENOUGH_DATA;
+    return DECODE_INVALID_WEBP;
+  }
+  status = WebPGetFeatures(data, data_size, &config->input);
+  if (status != VP8_STATUS_OK) {
+    *detail = (int)status;
+    return DECODE_INVALID_WEBP;
+  }
+  if (format < 0) {
+    output_buffer->colorspace = MODE_RGBA;
+  } else if (!OutputColorspace((OutputFileFormat)format, config->input.has_alpha,
+                               &output_buffer->colorspace)) {
+    return DECODE_INVALID_FORMAT;
+  }
+  status = WebPDecode(data, data_size, config);
+  if (status != VP8_STATUS_OK) {
+    *detail = (int)status;
     return DECODE_FAILED;
   }
   return 0;
 }
 
-int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeConfig *decode_config) {
+int webp_decode(const char *in_file, const char *out_file,
+                const FfiWebpDecodeConfig *decode_config, int* detail) {
   WebPDecoderConfig config;
   OutputFileFormat format;
   const uint8_t* data = NULL;
   size_t data_size = 0;
-  int result = SetupDecoder(decode_config, &config, &format);
+  int result;
 
+  *detail = 0;
+  result = SetupDecoder(decode_config, &config, &format);
   if (result != 0) return result;
   if (!UtilReadFile(in_file, &data, &data_size)) {
     return DECODE_CANNOT_READ_INPUT;
   }
 
-  result = DecodeData(data, data_size, format, &config);
+  result = DecodeData(data, data_size, (int)format, &config, detail);
   if (result == 0 && !UtilSaveOutput(&config.output, format, out_file)) {
     result = DECODE_CANNOT_WRITE_OUTPUT;
   }
@@ -361,7 +516,7 @@ int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeCo
 
 int webp_decode_data(const uint8_t* data, size_t data_size,
                      uint8_t** output, size_t* output_size,
-                     const FfiWebpDecodeConfig* decode_config) {
+                     const FfiWebpDecodeConfig* decode_config, int* detail) {
   WebPDecoderConfig config;
   OutputFileFormat format;
   FILE* out = NULL;
@@ -371,10 +526,11 @@ int webp_decode_data(const uint8_t* data, size_t data_size,
 
   *output = NULL;
   *output_size = 0;
+  *detail = 0;
   result = SetupDecoder(decode_config, &config, &format);
   if (result != 0) return result;
 
-  result = DecodeData(data, data_size, format, &config);
+  result = DecodeData(data, data_size, (int)format, &config, detail);
   if (result == 0) {
     // a FILE* that collects the output in a growing malloc'ed buffer
     out = open_memstream(&buffer, &buffer_size);
@@ -396,6 +552,45 @@ int webp_decode_data(const uint8_t* data, size_t data_size,
   } else {
     free(buffer);
   }
+  return result;
+}
+
+int webp_decode_rgba(const uint8_t* data, size_t data_size,
+                     uint8_t** output, size_t* output_size, int* width, int* height,
+                     const FfiWebpDecodeConfig* decode_config, int* detail) {
+  WebPDecoderConfig config;
+  OutputFileFormat format;
+  int result;
+
+  *output = NULL;
+  *output_size = 0;
+  *width = 0;
+  *height = 0;
+  *detail = 0;
+  result = SetupDecoder(decode_config, &config, &format);
+  if (result != 0) return result;
+
+  result = DecodeData(data, data_size, -1, &config, detail);
+  if (result == 0) {
+    const WebPDecBuffer* const buffer = &config.output;
+    const WebPRGBABuffer* const rgba = &buffer->u.RGBA;
+    const size_t row_size = (size_t)buffer->width * 4;
+    uint8_t* pixels = (uint8_t*)malloc(row_size * (size_t)buffer->height);
+    if (pixels == NULL) {
+      result = DECODE_OUT_OF_MEMORY;
+    } else {
+      int y;
+      // copy row by row: libwebp's stride may be wider than the image
+      for (y = 0; y < buffer->height; ++y) {
+        memcpy(pixels + (size_t)y * row_size, rgba->rgba + (size_t)y * rgba->stride, row_size);
+      }
+      *output = pixels;
+      *output_size = row_size * (size_t)buffer->height;
+      *width = buffer->width;
+      *height = buffer->height;
+    }
+  }
+  WebPFreeDecBuffer(&config.output);
   return result;
 }
 

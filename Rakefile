@@ -18,6 +18,12 @@ task :spec do
   RSpec::Core::RakeTask.new
 end
 
+desc "run specs with RBS runtime type checks against sig/"
+task "spec:types" do
+  env = { "RBS_TEST_TARGET" => "WebP::*,WebP", "RBS_TEST_OPT" => "-I sig", "RBS_TEST_LOGLEVEL" => "error" }
+  sh env, "ruby -r rbs/test/setup -S rspec"
+end
+
 task :default => [:clean, :compile, :spec]
 
 CLEAN.include('ext/**/*{.o,.log,.so,.bundle}')

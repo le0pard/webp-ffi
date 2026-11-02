@@ -6,21 +6,32 @@ module WebP
       :sns_strength, :filter_strength, :filter_sharpness,
       :filter_type, :autofilter, :alpha_compression, :alpha_filtering,
       :alpha_quality, :pass, :show_compressed, :preprocessing, :partitions,
-      :partition_limit, :width, :height].freeze
+      :partition_limit, :width, :height,
+      :exact, :use_sharp_yuv, :thread_level, :low_memory, :emulate_jpeg_size].freeze
     ENCODE_FLOAT_OPTIONS = [:quality, :target_PSNR].freeze
     CROP_RESIZE_OPTIONS = [:crop_x, :crop_y, :crop_w, :crop_h, :resize_w, :resize_h].freeze
-    ENCODE_OPTIONS = (ENCODE_INT_OPTIONS + ENCODE_FLOAT_OPTIONS + CROP_RESIZE_OPTIONS).freeze
+    # options that take a name or a list of names
+    ENCODE_NAMED_OPTIONS = [:preset, :image_hint, :level, :metadata].freeze
+    ENCODE_OPTIONS = (ENCODE_INT_OPTIONS + ENCODE_FLOAT_OPTIONS + CROP_RESIZE_OPTIONS + ENCODE_NAMED_OPTIONS).freeze
+    # raw pixels come with their own size and have no metadata
+    ENCODE_RGBA_OPTIONS = (ENCODE_OPTIONS - [:width, :height, :metadata]).freeze
 
     DECODE_FLAGS = [:bypass_filtering, :no_fancy_upsampling, :use_threads].freeze
     DECODE_OPTIONS = ([:output_format] + DECODE_FLAGS + CROP_RESIZE_OPTIONS).freeze
+    DECODE_RGBA_OPTIONS = (DECODE_OPTIONS - [:output_format]).freeze
     OUTPUT_FORMATS = [:png, :pam, :ppm, :pgm, :bmp, :tiff, :yuv, :alpha_plane_only].freeze
+
+    # libwebp's WebPPreset, WebPImageHint and the METADATA_* flags in metadata.h
+    PRESETS = { default: 0, picture: 1, photo: 2, drawing: 3, icon: 4, text: 5 }.freeze
+    IMAGE_HINTS = { default: 0, picture: 1, photo: 2, graph: 3 }.freeze
+    METADATA = { exif: 1, icc: 2, xmp: 4 }.freeze
 
     def initialize(options)
       @user_options = options
     end
 
-    def encode_pointer
-      check_unknown_options(ENCODE_OPTIONS, "encode")
+    def encode_pointer(known = ENCODE_OPTIONS)
+      check_unknown_options(known, "encode")
       options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpEncodeConfig.size, true
       options_struct = C::FfiWebpEncodeConfig.new options_pointer
       (ENCODE_INT_OPTIONS + [:target_PSNR]).each do |key|
@@ -28,15 +39,23 @@ module WebP
         options_struct[key] = value.nil? ? -1 : value
       end
       encode_default(options_struct)
-      ([:quality] + CROP_RESIZE_OPTIONS).each do |key|
+      CROP_RESIZE_OPTIONS.each do |key|
         value = number_option(key)
         options_struct[key] = value unless value.nil?
       end
+      level = level_option
+      quality = number_option(:quality)
+      # a lossless level picks its own quality, so only override it when asked
+      options_struct[:quality] = quality.nil? ? (level >= 0 ? -1 : 100) : quality
+      options_struct[:lossless_level] = level
+      options_struct[:preset] = named_option(:preset, PRESETS)
+      options_struct[:image_hint] = named_option(:image_hint, IMAGE_HINTS)
+      options_struct[:metadata] = metadata_option
       options_pointer
     end
 
-    def decode_pointer
-      check_unknown_options(DECODE_OPTIONS, "decode")
+    def decode_pointer(known = DECODE_OPTIONS)
+      check_unknown_options(known, "decode")
       options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpDecodeConfig.size, true
       options_struct = C::FfiWebpDecodeConfig.new options_pointer
       decode_default(options_struct)
@@ -96,6 +115,39 @@ module WebP
       format = value.respond_to?(:to_sym) ? value.to_sym : value
       return format if OUTPUT_FORMATS.include?(format)
       raise ArgumentError, "webp-ffi: unknown output_format #{value.inspect}, use one of #{OUTPUT_FORMATS.map(&:inspect).join(', ')}"
+    end
+
+    # a Symbol or String from 'names', or -1 for the default
+    def named_option(key, names)
+      value = @user_options[key]
+      return -1 if value.nil?
+      name = value.respond_to?(:to_sym) ? value.to_sym : value
+      names.fetch(name) do
+        raise ArgumentError, "webp-ffi: unknown #{key} #{value.inspect}, use one of #{names.keys.map(&:inspect).join(', ')}"
+      end
+    end
+
+    # lossless compression effort from 0 (fast) to 9 (small), or -1
+    def level_option
+      value = @user_options[:level]
+      return -1 if value.nil?
+      return value if value.is_a?(Integer) && value.between?(0, 9)
+      raise ArgumentError, "webp-ffi: option :level must be an integer from 0 to 9, got #{value.inspect}"
+    end
+
+    # :all, :none, or one or more of :exif, :icc and :xmp
+    def metadata_option
+      value = @user_options[:metadata]
+      case value
+      when nil, false, :none, "none" then 0
+      when true, :all, "all" then METADATA.values.sum
+      else
+        Array(value).sum do |name|
+          METADATA.fetch(name.respond_to?(:to_sym) ? name.to_sym : name) do
+            raise ArgumentError, "webp-ffi: unknown metadata #{name.inspect}, use :all, :none or some of :exif, :icc, :xmp"
+          end
+        end
+      end
     end
 
     def encode_default(options_struct)

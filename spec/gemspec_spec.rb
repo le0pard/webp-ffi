@@ -10,9 +10,9 @@ describe "webp-ffi.gemspec", :source_tree do
     expect(gemspec.files).to include(*sources, "ext/webp_ffi/Rakefile", "ext/webp_ffi/build_config.rb")
   end
 
-  it "ships the Ruby library" do
-    ruby_files = Dir.chdir(root) { Dir["lib/**/*.rb"] }
-    expect(gemspec.files).to include(*ruby_files)
+  it "ships the Ruby library and its type signatures" do
+    ruby_files = Dir.chdir(root) { Dir["lib/**/*.rb", "sig/**/*.rbs"] }
+    expect(gemspec.files).to include(*ruby_files, "sig/webp.rbs")
   end
 
   it "leaves out specs, test images and build output" do

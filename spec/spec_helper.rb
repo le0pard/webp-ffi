@@ -12,6 +12,8 @@ else
   require File.dirname(__FILE__) + "/../lib/webp_ffi"
 end
 
+Dir[File.join(__dir__, "support", "*.rb")].sort.each { |file| require file }
+
 module SpecHelpers
   def factory_path(name)
     File.expand_path(File.join(File.dirname(__FILE__), "factories", name))
@@ -30,6 +32,10 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
   config.include SpecHelpers
+  config.include ImageBuilder
   # specs for the build and packaging code need the source tree
   config.filter_run_excluding :source_tree if ENV['WEBP_FFI_INSTALLED_GEM']
+  # RBS runtime type checks (RBS_TEST_TARGET) reject calls with wrong types
+  # before the gem can, and wrap the WebP methods
+  config.filter_run_excluding :outside_type_check if ENV['RBS_TEST_TARGET']
 end

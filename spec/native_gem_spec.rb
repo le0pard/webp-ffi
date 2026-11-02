@@ -104,6 +104,12 @@ describe WebPFFI::NativeGem, :source_tree do
         .to raise_error(described_class::Error, /built for elf x86_64, not x86_64-darwin/)
     end
 
+    it "refuses a file that is not a library" do
+      native_build("libwebp_ffi.so", "not a library at all")
+      expect { native_gem("x86_64-linux-gnu").build(File.join(@dir, "pkg")) }
+        .to raise_error(described_class::Error, /built for an unknown format, not x86_64-linux-gnu/)
+    end
+
     it "refuses to package without a native build" do
       expect { native_gem("x86_64-linux-gnu").build(File.join(@dir, "pkg")) }
         .to raise_error(described_class::Error, /run script\/build-native.sh first/)

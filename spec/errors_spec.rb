@@ -75,7 +75,7 @@ describe "WebP errors" do
     it "names the input file that is not a WebP image" do
       input = factory_path("1.png")
       expect { WebP.decode(input, File.join(@dir, "out.png")) }
-        .to raise_error(WebP::DecoderError, "Invalid webp image: #{input}")
+        .to raise_error(WebP::DecoderError, "Invalid webp image: #{input} (the data is not a valid WebP bitstream)")
     end
 
     it "reports error codes it does not know" do
@@ -92,5 +92,42 @@ describe "WebP errors" do
           .to raise_error(WebP::DecoderError)
       }.not_to output.to_stderr_from_any_process
     end
+  end
+end
+
+describe WebP::Error do
+  it "is the base class of every error the gem raises" do
+    expect([WebP::EncoderError, WebP::DecoderError, WebP::InvalidImageFormatError].map(&:superclass).uniq).to eq([WebP::Error])
+    expect(WebP::Error.superclass).to eq(StandardError)
+  end
+
+  it "keeps a code and libwebp's reason" do
+    error = WebP::EncoderError.new("message", code: 7, reason: :bad_dimension)
+    expect([error.message, error.code, error.reason]).to eq(["message", 7, :bad_dimension])
+    expect([WebP::DecoderError.new("plain").code, WebP::DecoderError.new("plain").reason]).to eq([nil, nil])
+  end
+
+  it "explains pictures larger than WebP allows" do
+    expect { WebP.encode_data(File.binread(factory_path("1.png")), resize_w: 20_000, resize_h: 10) }.to raise_error(
+      an_instance_of(WebP::EncoderError).and(having_attributes(
+        code: 7, reason: :bad_dimension,
+        message: "Cannot encode picture as WebP (the picture size is not supported, WebP allows up to 16383 x 16383 pixels)")))
+  end
+
+  it "explains truncated WebP data" do
+    webp = File.binread(factory_path("1.webp"))
+    expect { WebP.decode_data(webp.byteslice(0, webp.bytesize / 2)) }.to raise_error(
+      an_instance_of(WebP::DecoderError).and(having_attributes(code: 4, reason: :not_enough_data)))
+  end
+
+  it "explains that animations cannot be decoded" do
+    still = WebP.encode_data(File.binread(factory_path("1.png")), lossless: true, resize_w: 20, resize_h: 15)
+    expect { WebP.decode_data(animated_webp(still)) }.to raise_error(
+      an_instance_of(WebP::DecoderError).and(having_attributes(reason: :unsupported_feature)))
+  end
+
+  it "names the reason in file errors too" do
+    expect { WebP.decode(factory_path("1.png"), "/tmp/never-written.png") }
+      .to raise_error(WebP::DecoderError, /\AInvalid webp image: .*1\.png \(the data is not a valid WebP bitstream\)\z/)
   end
 end

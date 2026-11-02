@@ -40,7 +40,7 @@ describe WebP::Options do
   describe "#encode_pointer" do
     it "writes every field when no options are given" do
       config = WebP::C::FfiWebpEncodeConfig.new(described_class.new({}).encode_pointer)
-      zero_fields = [:crop_x, :crop_y, :crop_w, :crop_h, :resize_w, :resize_h]
+      zero_fields = [:crop_x, :crop_y, :crop_w, :crop_h, :resize_w, :resize_h, :metadata]
       expected = config.members.to_h do |member|
         value = if member == :quality then 100
                 elsif zero_fields.include?(member) then 0
@@ -98,6 +98,36 @@ describe WebP::Options do
 
     it "accepts the output format as a string" do
       expect(decode_config(output_format: "tiff")[:output_format]).to eq(:tiff)
+    end
+
+    it "rejects output formats that are not names" do
+      expect { decode_config(output_format: 5) }.to raise_error(ArgumentError, /unknown output_format 5/)
+    end
+
+    it "accepts preset and image hint names as symbols or strings" do
+      expect(fields(encode_config(preset: :photo, image_hint: "graph"))).to include(preset: 2, image_hint: 3)
+    end
+
+    it "rejects unknown presets and image hints" do
+      expect { encode_config(preset: :fast) }
+        .to raise_error(ArgumentError, /unknown preset :fast, use one of :default, :picture, :photo, :drawing, :icon, :text/)
+      expect { encode_config(image_hint: 7) }.to raise_error(ArgumentError, /unknown image_hint 7/)
+    end
+
+    it "accepts levels from 0 to 9 and leaves the quality to the level" do
+      expect(fields(encode_config(level: 9))).to include(lossless_level: 9, quality: -1)
+      expect(fields(encode_config(level: 9, quality: 50))).to include(lossless_level: 9, quality: 50)
+    end
+
+    it "rejects other levels" do
+      [10, -1, "6", 6.5].each do |level|
+        expect { encode_config(level: level) }.to raise_error(ArgumentError, /:level must be an integer from 0 to 9/)
+      end
+    end
+
+    it "maps metadata names to flags" do
+      expect([nil, :none, :all, true, :icc, [:exif, "xmp"]].map { |value| encode_config(metadata: value)[:metadata] })
+        .to eq([0, 0, 7, 7, 2, 5])
     end
 
     it "rejects unknown output formats instead of writing PNG" do

@@ -11,5 +11,6 @@ end
 require "webp/options"
 require "webp/c"
 require "webp/error"
+require "webp/info"
 require "webp/webp"
 require "webp/version"

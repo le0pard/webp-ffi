@@ -7,6 +7,7 @@
 
 #include "webp/decode.h"
 #include "webp/encode.h"
+#include "./metadata.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -39,12 +40,11 @@ int UtilWriteOutput(const WebPDecBuffer* const buffer, OutputFileFormat format, 
 int UtilReadFile(const char* const file_name,
                    const uint8_t** data, size_t* data_size);
 
-int UtilReadPicture(const char* const filename, WebPPicture* const pic,
-                      int keep_alpha);
 // Reads a PNG, JPEG or TIFF picture from an open file (or raw YUV when the
-// picture already has a size). Returns 1 on success.
+// picture already has a size). When 'metadata' is not NULL, the picture's
+// metadata is copied into it. Returns 1 on success.
 int UtilReadPictureFile(FILE* const in_file, WebPPicture* const pic,
-                        int keep_alpha);
+                        int keep_alpha, Metadata* const metadata);
 
 // Checks that a 'width' x 'height' image with 'bytes_per_px' bytes per pixel
 // fits in memory, using 64-bit math so the size can't wrap around.

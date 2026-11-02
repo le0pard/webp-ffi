@@ -58,7 +58,7 @@ The build finds libraries installed by Homebrew (`/opt/homebrew` or `/usr/local`
 
     C_FLAGS="-I/path/to/include" LD_FLAGS="-L/path/to/lib" gem install webp-ffi
 
-Next, you should [install libwebp](https://developers.google.com/speed/webp/docs/compiling) (if you didn't install it by `brew` in Mac OS or by `apt-get` in Ubuntu or Debian). Webp library version should be >= 0.3.0. This gem is not support Windows systems.
+Next, you should [install libwebp](https://developers.google.com/speed/webp/docs/compiling) (if you didn't install it by `brew` in Mac OS or by `apt-get` in Ubuntu or Debian). The source gem needs libwebp 1.0.0 or newer. This gem does not support Windows.
 
 ### Final part
 
@@ -85,13 +85,23 @@ Basic info about libwebp (encoder and decoder versions):
     WebP.encoder_version # => "1.6.0"
 
 
-### WebP size (width and height)
+### WebP size and details
 
-Get size (width and height) from webp image:
+Get the size (width and height) of a WebP image:
 
-    filename = File.expand_path(File.join(File.dirname(__FILE__), "spec/factories/4.webp"))
-    WebP.webp_size(File.open(filename, "rb").read)
-     => [2000, 2353]
+    WebP.webp_size(File.binread("photo.webp")) # => [1024, 772]
+
+`WebP.info` returns more details as a `WebP::Info`:
+
+    info = WebP.info(File.binread("photo.webp"))
+    info.width      # => 1024
+    info.height     # => 772
+    info.format     # => :lossy, :lossless or :mixed (animations)
+    info.alpha?     # => false
+    info.animated?  # => false
+    info.metadata   # => [:icc, :exif] (metadata chunks in the file)
+
+Both accept a binary String or an IO, and raise `WebP::InvalidImageFormatError` for data that is not WebP.
 
 
 ### Encode WebP image
@@ -115,11 +125,13 @@ Integer options also accept `true` and `false` (as 1 and 0). Unknown option name
 
 Possible encode options:
 
+ * **preset** (symbol) - start from libwebp's settings for a kind of image: `:default`, `:picture`, `:photo`, `:drawing`, `:icon` or `:text`. Other options still apply on top
  * **lossless** (int) - Lossless encoding (0=lossy(default), 1=lossless)
- * **near_lossless** (int) - Use near-lossless image preprocessing (0=maximum preprocessing, 100=no preprocessing(default)). Turns on lossless encoding. Requires libwebp 0.5.0 or newer, ignored on older versions
- * **quality** (float) - between 0 (smallest file) and 100 (biggest)
+ * **level** (int) - lossless preset from 0 (fastest) to 9 (smallest), like `cwebp -z`. Turns on lossless encoding and picks its own quality and method unless you set them
+ * **near_lossless** (int) - Use near-lossless image preprocessing (0=maximum preprocessing, 100=no preprocessing(default)). Turns on lossless encoding
+ * **quality** (float) - between 0 (smallest file) and 100 (biggest). Default is 100
  * **method** (int) - quality/speed trade-off (0=fast, 6=slower-better)
- * **target\_size** (int) - if non-zero, set the desired target size in bytes. Takes precedence over the 'compression' parameter
+ * **target\_size** (int) - if non-zero, set the desired target size in bytes. Takes precedence over the 'compression' parameter. Like cwebp, 6 passes are used unless **pass** is set
  * **target\_PSNR** (float) - if non-zero, specifies the minimal distortion to try to achieve. Takes precedence over target\_size
  * **segments** (int) - maximum number of segments to use, in [1..4]
  * **sns_strength** (int) - Spatial Noise Shaping. 0=off, 100=maximum
@@ -133,11 +145,27 @@ Possible encode options:
  * **pass** (int) - number of entropy-analysis passes (in [1..10])
  * **show\_compressed** (int) - if true, export the compressed picture back. In-loop filtering is not applied
  * **preprocessing** (int) - preprocessing filter (0=none, 1=segment-smooth)
- * **partitions** (int) - log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding
+ * **partitions** (int) - log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding. libwebp only uses it together with **low\_memory**
  * **partition\_limit** (int) - quality degradation allowed to fit the 512k limit on prediction modes coding (0: no degradation, 100: maximum possible degradation)
+ * **image\_hint** (symbol) - kind of image for lossless encoding: `:default`, `:picture`, `:photo` or `:graph`
+ * **exact** (bool) - keep the RGB values under transparent areas, which libwebp otherwise changes to compress better
+ * **use\_sharp\_yuv** (bool) - sharper (and slower) RGB to YUV conversion for lossy encoding
+ * **thread\_level** (bool) - use more than one thread where libwebp can
+ * **low\_memory** (bool) - use less memory and more CPU
+ * **emulate\_jpeg\_size** (bool) - pick settings that give about the size of a JPEG of the same quality
+ * **metadata** - copy metadata from the input: `:all`, `:none` (default) or some of `:icc`, `:exif` and `:xmp` (see below)
  * **width** (int), **height** (int) - Input size (width x height) for YUV
  * **crop\_x** (int), **crop\_y** (int), **crop\_w** (int), **crop\_h** (int) - crop picture with the given rectangle
  * **resize\_w** (int), **resize\_h** (int) - resize picture (after any cropping)
+
+### Metadata
+
+By default, like `cwebp`, no metadata is copied. The **metadata** option copies the ICC color profile, EXIF and XMP data from the input into the WebP file:
+
+    WebP.encode("photo.jpg", "photo.webp", metadata: :all)
+    WebP.encode_data(File.binread("photo.png"), metadata: [:icc])
+
+PNG and JPEG files can carry all three. In PNG files the gem reads the iCCP and eXIf chunks, XMP text and the "raw profile" text chunks that ImageMagick and ExifTool write. Like `cwebp`, only the ICC profile and XMP data are read from TIFF files, and broken metadata fails the encode only when it was requested.
 
 ### Decode WebP image
 
@@ -184,11 +212,40 @@ Possible decode options (unknown options and an unknown `output_format` raise `A
     png = WebP.decode_data(webp)
     tiff = WebP.decode_data(webp, output_format: :tiff, resize_w: 200, resize_h: 150)
 
-`encode_data` reads PNG, JPEG and TIFF data, or raw YUV 4:2:0 data when `width` and `height` are given. Errors raise `WebP::EncoderError` and `WebP::DecoderError`, like the file methods.
+`encode_data` reads PNG, JPEG and TIFF data, or raw YUV 4:2:0 data when `width` and `height` are given. Both methods also accept an IO, such as an open file or a `StringIO`, and read it from its current position.
+
+### Raw pixels
+
+`WebP.encode_rgba` encodes raw RGBA pixels (4 bytes per pixel, row after row), and `WebP.decode_rgba` returns them, for example to work with ChunkyPNG, libvips or OpenCV:
+
+    webp = WebP.encode_rgba(pixels, width, height, lossless: true)
+    image = WebP.decode_rgba(webp, resize_w: 200, resize_h: 150)
+    image.rgba    # => binary String of 200 * 150 * 4 bytes
+    image.width   # => 200
+    image.height  # => 150
+
+They take the same options as `encode_data` and `decode_data`, except the ones for files: **width**, **height**, **metadata** and **output\_format**.
+
+### Errors
+
+Every error the gem raises inherits from `WebP::Error`. `WebP::EncoderError` and `WebP::DecoderError` also carry the gem's error `code` and libwebp's `reason`, when it gives one:
+
+    begin
+      WebP.encode("huge.png", "huge.webp")
+    rescue WebP::EncoderError => e
+      e.message # => "Cannot encode picture as WebP (the picture size is not supported, WebP allows up to 16383 x 16383 pixels)"
+      e.reason  # => :bad_dimension
+    end
+
+Invalid arguments, like unknown options, raise `ArgumentError` or `TypeError`.
 
 ### Threads
 
-`WebP.encode`, `WebP.decode`, `WebP.encode_data` and `WebP.decode_data` release Ruby's Global VM Lock while libwebp works, so other threads (for example in Puma or Sidekiq) keep running during long conversions.
+`WebP.encode`, `WebP.decode` and the in-memory and raw pixel methods release Ruby's Global VM Lock while libwebp works, so other threads (for example in Puma or Sidekiq) keep running during long conversions.
+
+### Type signatures
+
+The gem ships RBS type signatures in `sig/webp.rbs` for Steep and editors with RBS support.
 
 ## Rails assets pipeline integration
 
