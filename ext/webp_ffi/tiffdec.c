@@ -2,6 +2,7 @@
 #include "./util.h"
 
 #include <stdarg.h>
+#include <sys/types.h>
 #include <tiffio.h>
 #include <tiffvers.h>
 
@@ -26,20 +27,73 @@ static int SilentTIFFHandler(TIFF* tif, void* user_data, const char* module,
 }
 #endif
 
-static TIFF* OpenTIFF(const char* const filename) {
+// libtiff reads through these callbacks, so the same code works for files and
+// for in-memory data opened with fmemopen.
+static tmsize_t UtilTIFFRead(thandle_t handle, void* buffer, tmsize_t size) {
+  if (size <= 0) return 0;
+  return (tmsize_t)fread(buffer, 1, (size_t)size, (FILE*)handle);
+}
+
+static tmsize_t UtilTIFFWrite(thandle_t handle, void* buffer, tmsize_t size) {
+  (void)handle;
+  (void)buffer;
+  (void)size;
+  return 0;  // read only
+}
+
+static toff_t UtilTIFFSeek(thandle_t handle, toff_t offset, int whence) {
+  FILE* const file = (FILE*)handle;
+  if (fseeko(file, (off_t)offset, whence) != 0) return (toff_t)-1;
+  return (toff_t)ftello(file);
+}
+
+static int UtilTIFFClose(thandle_t handle) {
+  (void)handle;
+  return 0;  // the caller closes the file
+}
+
+static toff_t UtilTIFFSize(thandle_t handle) {
+  FILE* const file = (FILE*)handle;
+  const off_t position = ftello(file);
+  off_t size;
+  if (position < 0 || fseeko(file, 0, SEEK_END) != 0) return 0;
+  size = ftello(file);
+  fseeko(file, position, SEEK_SET);
+  return size < 0 ? 0 : (toff_t)size;
+}
+
+static int UtilTIFFMap(thandle_t handle, void** base, toff_t* size) {
+  (void)handle;
+  (void)base;
+  (void)size;
+  return 0;  // no memory mapping
+}
+
+static void UtilTIFFUnmap(thandle_t handle, void* base, toff_t size) {
+  (void)handle;
+  (void)base;
+  (void)size;
+}
+
+// "m" turns off memory mapping, which a FILE* can't provide
+static TIFF* OpenTIFF(FILE* const file) {
 #ifdef UTIL_TIFF_HAS_OPEN_OPTIONS
   TIFF* tif;
   TIFFOpenOptions* const opts = TIFFOpenOptionsAlloc();
   if (opts == NULL) return NULL;
   TIFFOpenOptionsSetErrorHandlerExtR(opts, SilentTIFFHandler, NULL);
   TIFFOpenOptionsSetWarningHandlerExtR(opts, SilentTIFFHandler, NULL);
-  tif = TIFFOpenExt(filename, "r", opts);
+  tif = TIFFClientOpenExt("webp-ffi", "rm", (thandle_t)file,
+                          UtilTIFFRead, UtilTIFFWrite, UtilTIFFSeek, UtilTIFFClose,
+                          UtilTIFFSize, UtilTIFFMap, UtilTIFFUnmap, opts);
   TIFFOpenOptionsFree(opts);
   return tif;
 #else
   // Older libtiff only has process-wide handlers. Changing those would affect
   // other code in the same process, so its messages still reach stderr.
-  return TIFFOpen(filename, "r");
+  return TIFFClientOpen("webp-ffi", "rm", (thandle_t)file,
+                        UtilTIFFRead, UtilTIFFWrite, UtilTIFFSeek, UtilTIFFClose,
+                        UtilTIFFSize, UtilTIFFMap, UtilTIFFUnmap);
 #endif
 }
 
@@ -47,9 +101,9 @@ const char* UtilTIFFVersion(void) {
   return TIFFGetVersion();
 }
 
-int UtilReadTIFF(const char* const filename,
+int UtilReadTIFF(FILE* const in_file,
                     WebPPicture* const pic, int keep_alpha) {
-  TIFF* const tif = OpenTIFF(filename);
+  TIFF* const tif = OpenTIFF(in_file);
   uint32_t width, height;
   uint32_t* raster;
   int stride;

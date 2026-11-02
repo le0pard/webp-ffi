@@ -19,6 +19,7 @@ Gem::Specification.new do |spec|
         "README.md", "CHANGELOG.md", "LICENSE.txt"]
   end
   spec.require_paths = ["lib"]
+  spec.required_ruby_version = ">= 3.2"
   spec.extensions    << 'ext/webp_ffi/Rakefile'
 
   spec.add_runtime_dependency "ffi", ">= 1.9.0"

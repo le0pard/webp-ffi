@@ -31,6 +31,25 @@ describe "WebP with threads" do
     expect(beats).to be >= 10
   end
 
+  it "lets other threads run while encoding data in memory" do
+    data = File.binread(factory_path("4.jpg"))
+    beats = heartbeats_during { WebP.encode_data(data, method: 6) }
+    expect(beats).to be >= 10
+  end
+
+  it "lets other threads run while decoding data in memory" do
+    data = File.binread(factory_path("5.webp"))
+    beats = heartbeats_during { WebP.decode_data(data) }
+    expect(beats).to be >= 10
+  end
+
+  it "encodes data from several threads at once" do
+    data = File.binread(factory_path("1.png"))
+    results = Array.new(4) { Thread.new { WebP.encode_data(data) } }.map(&:value)
+    expect(results.uniq.size).to eq(1)
+    expect(WebP.webp_size(results.first)).to eq([400, 301])
+  end
+
   it "encodes the same image from several threads at once" do
     outputs = Array.new(4) { |i| File.join(@dir, "#{i}.webp") }
     outputs.map { |output| Thread.new { WebP.encode(factory_path("1.png"), output) } }.each(&:join)

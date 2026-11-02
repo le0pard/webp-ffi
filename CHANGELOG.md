@@ -1,29 +1,45 @@
-## Unreleased
+## v1.0.0
 
-* Fix `near_lossless` option being ignored with every libwebp version
-* Fix decode reporting success when the output file cannot be written
-* Fix wrong error message when the decode input file cannot be read
+Breaking changes:
+
+* Require Ruby 3.2 or newer
+* Raise `ArgumentError` for unknown options (they were ignored), with a suggestion for typos
+* Raise `ArgumentError` for an unknown `output_format` instead of silently writing PNG
+* Raise `ArgumentError` for option values that are not numbers
+* `false` now means 0 for integer options, instead of the libwebp default
+* `near_lossless` now works, so it produces lossless (larger) files; it was ignored before
+* Decode raises `WebP::DecoderError` when the output file cannot be written; it reported success before
+* Multi-page TIFF files use the first page instead of the last
+* Remove the unused `WebP::LibC` module and `WebP::C.test_c`
+* The functions in `WebP::C` changed; use the `WebP` methods instead
+
+New:
+
+* `WebP.encode_data` and `WebP.decode_data` encode and decode binary strings in memory
+* Prebuilt gems for Linux (glibc and musl, x86_64 and aarch64) and macOS 11+ (arm64 and x86_64) with libwebp 1.6.0, libpng, libjpeg-turbo, libtiff and zlib included
+* Release the Global VM Lock during encode and decode, so other Ruby threads keep running
+* Accept `Pathname` and other objects with `#to_path` as file names
+* Accept `true` and `false` for integer options, and the decode `output_format` as a string
 * Include the file path in error messages about input and output files
+
+Fixes:
+
 * Check image sizes before allocating memory in the PNG, JPEG and TIFF readers
 * Fix memory leaks when reading broken PNG and JPEG files
-* Fix multi-page TIFF files using the last page instead of the first
+* Fix wrong error message when the decode input file cannot be read
+* Detect write errors when closing output files
 * Stop printing errors and warnings to stderr (libtiff older than 4.5.0 still prints its own)
 * Always initialize every decode option passed to C
+
+Build and release:
+
 * Find libraries from Homebrew on Apple Silicon and from MacPorts without extra flags
 * `C_FLAGS` and `LD_FLAGS` now take priority over the default library folders
 * Stop the build early with install instructions when libwebp, libpng, libjpeg or libtiff is missing
 * Ship a smaller gem without specs and test images
 * Add rake as a runtime dependency, because gem install uses it to build the extension
-* Release the Global VM Lock during encode and decode, so other Ruby threads keep running
-* Accept `Pathname` and other objects with `#to_path` as file names
-* Warn about unknown options, with a suggestion for typos
-* Raise `ArgumentError` for an unknown `output_format` instead of silently writing PNG
-* Raise `ArgumentError` for option values that are not numbers
-* Accept `true` and `false` for integer options; `false` now means 0 instead of the libwebp default
-* Accept the decode `output_format` as a string
-* Publish prebuilt gems for Linux (glibc and musl, x86_64 and aarch64) and macOS (arm64 and x86_64) with libwebp 1.6.0, libpng, libjpeg-turbo, libtiff and zlib included
 * Release from a `v*` tag through GitHub Actions and RubyGems.org trusted publishing
-* Pin GitHub Actions to commit hashes and keep them updated with Dependabot
+* Pin GitHub Actions and Docker images to digests; Dependabot keeps the actions updated
 
 ## v0.4.0
 

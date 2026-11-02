@@ -41,11 +41,6 @@ describe WebP do
     end
   end
 
-  it "calculate plus 100 by test_c (verify C)" do
-    expect(WebP::C.test_c(100)).to eq(200)
-    expect(WebP::C.test_c(150)).to eq(250)
-  end
-
   it "decoder version" do
     expect(WebP.decoder_version).not_to be_nil
     expect(WebP.decoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
@@ -53,7 +48,19 @@ describe WebP do
 
   it "encoder version" do
     expect(WebP.encoder_version).not_to be_nil
-    expect(WebP.decoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
+    expect(WebP.encoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
+  end
+
+  it "formats the packed libwebp version numbers" do
+    allow(WebP::C).to receive(:decoder_version).and_return(0x010600)
+    allow(WebP::C).to receive(:encoder_version).and_return(0x0a0b0c)
+    expect(WebP.decoder_version).to eq("1.6.0")
+    expect(WebP.encoder_version).to eq("10.11.12")
+  end
+
+  it "no longer defines the unused libc helpers or test functions" do
+    expect(defined?(WebP::LibC)).to be_nil
+    expect(WebP::C).not_to respond_to(:test_c)
   end
 
   context "webp_size" do
@@ -71,6 +78,16 @@ describe WebP do
       filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/1.png"))
       data = File.open(filename, "rb").read
       expect { WebP.webp_size(data) }.to raise_error WebP::InvalidImageFormatError
+    end
+    it "reads frozen strings" do
+      data = File.binread(File.expand_path(File.join(File.dirname(__FILE__), "factories/1.webp"))).freeze
+      expect(WebP.webp_size(data)).to eq([400, 301])
+    end
+    it "returns nil for nil" do
+      expect(WebP.webp_size(nil)).to be_nil
+    end
+    it "raise TypeError for data that is not a string" do
+      expect { WebP.webp_size(12345) }.to raise_error(TypeError, /expected image data as a String, got Integer/)
     end
   end
 

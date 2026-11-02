@@ -54,12 +54,20 @@ extern "C" {
   } FfiWebpDecodeConfig;
 
 
-  void decoder_version(char *version);
-  void encoder_version(char *version);
+  int decoder_version(void);
+  int encoder_version(void);
   int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height);
   int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeConfig *encode_config);
   int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeConfig *decode_config);
-  int test_c(int n);
+  // In-memory versions: on success '*output' holds 'output_size' bytes that the
+  // caller frees with webp_free_data. On failure '*output' is NULL.
+  int webp_encode_data(const uint8_t* data, size_t data_size,
+                       uint8_t** output, size_t* output_size,
+                       const FfiWebpEncodeConfig* encode_config);
+  int webp_decode_data(const uint8_t* data, size_t data_size,
+                       uint8_t** output, size_t* output_size,
+                       const FfiWebpDecodeConfig* decode_config);
+  void webp_free_data(uint8_t* data);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }    // extern "C"

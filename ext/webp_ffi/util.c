@@ -94,43 +94,57 @@ static InputFileFormat GetImageType(FILE* in_file) {
   return format;
 }
 
-int UtilReadPicture(const char* const filename, WebPPicture* const pic,
-                       int keep_alpha) {
+int UtilReadPictureFile(FILE* const in_file, WebPPicture* const pic,
+                        int keep_alpha) {
   int ok = 0;
-  FILE* in_file = fopen(filename, "rb");
-  if (in_file == NULL) {
-    //fprintf(stderr, "Error! Cannot open input file '%s'\n", filename);
-    return ok;
-  }
 
   if (pic->width == 0 || pic->height == 0) {
-    // If no size specified, try to decode it as PNG/JPEG (as appropriate).
+    // If no size specified, try to decode it as PNG/JPEG/TIFF (as appropriate).
     const InputFileFormat format = GetImageType(in_file);
     if (format == iPNG_) {
       ok = UtilReadPNG(in_file, pic, keep_alpha);
     } else if (format == iJPEG_) {
       ok = UtilReadJPEG(in_file, pic);
     } else if (format == iTIFF_) {
-      ok = UtilReadTIFF(filename, pic, keep_alpha);
+      ok = UtilReadTIFF(in_file, pic, keep_alpha);
     }
   } else {
     // If image size is specified, infer it as YUV format.
     ok = UtilReadYUV(in_file, pic);
   }
+  return ok;
+}
 
+int UtilReadPicture(const char* const filename, WebPPicture* const pic,
+                       int keep_alpha) {
+  int ok;
+  FILE* in_file = fopen(filename, "rb");
+  if (in_file == NULL) {
+    return 0;
+  }
+  ok = UtilReadPictureFile(in_file, pic, keep_alpha);
   fclose(in_file);
   return ok;
 }
 
 int UtilSaveOutput(const WebPDecBuffer* const buffer,
                        OutputFileFormat format, const char* const out_file) {
-  FILE* fout = NULL;
-  int ok = 1;
-
-  fout = fopen(out_file, "wb");
+  int ok;
+  FILE* const fout = fopen(out_file, "wb");
   if (!fout) {
     return 0;
   }
+  ok = UtilWriteOutput(buffer, format, fout);
+  // fclose flushes buffered data, so it can also fail (for example, disk full)
+  if (fclose(fout) != 0) {
+    ok = 0;
+  }
+  return ok;
+}
+
+int UtilWriteOutput(const WebPDecBuffer* const buffer,
+                    OutputFileFormat format, FILE* const fout) {
+  int ok = 1;
 
   if (format == oPNG) {
     ok &= UtilWritePNG(fout, buffer);
@@ -147,11 +161,6 @@ int UtilSaveOutput(const WebPDecBuffer* const buffer,
   } else if (format == ALPHA_PLANE_ONLY) {
     ok &= UtilWriteAlphaPlane(fout, buffer);
   } else {
-    ok = 0;
-  }
-
-  // fclose flushes buffered data, so it can also fail (for example, disk full)
-  if (fclose(fout) != 0) {
     ok = 0;
   }
   return ok;

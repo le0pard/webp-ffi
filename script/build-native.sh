@@ -43,12 +43,8 @@ JOBS=${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)}
 case "$(uname -s)" in
   Darwin)
     LIB_NAME=libwebp_ffi.bundle
-    if [ -z "${MACOSX_DEPLOYMENT_TARGET:-}" ]; then
-      case "$(uname -m)" in
-        arm64) MACOSX_DEPLOYMENT_TARGET=11.0 ;;
-        *) MACOSX_DEPLOYMENT_TARGET=10.15 ;;
-      esac
-    fi
+    # macOS 11 Big Sur and newer, on Apple Silicon and Intel
+    MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-11.0}
     export MACOSX_DEPLOYMENT_TARGET
     ;;
   Linux)

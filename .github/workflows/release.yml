@@ -22,6 +22,13 @@ permissions:
 env:
   # Ruby used to build, package, test and publish the gems
   RUBY_VERSION: '4.0'
+  # Docker images, pinned by digest. Dependabot does not update these: change the
+  # tag and the digest together, for example from `docker buildx imagetools inspect`.
+  MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:2026.11.01-2@sha256:7e41b1c7fd64dfc69703a1124b43c404382973ee06ec5d764b85c34d2221fded
+  MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64:2026.11.01-2@sha256:54b271d9562a3686298880df05367909e949ed317e7b1b79b59c696d75f78676
+  ALPINE_IMAGE: alpine:3.22.7@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+  # tests the musl gems; any recent Ruby works here
+  RUBY_ALPINE_IMAGE: ruby:4.0.9-alpine3.24@sha256:f1e530793cc09e1093417a4c9956069407155e1883d02beb30bda35ae54a47a3
 
 jobs:
   source:
@@ -72,25 +79,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # manylinux_2_28 has glibc 2.28, so the library also runs on older distributions
+          # build_image names one of the image variables in env above.
+          # manylinux_2_28 has glibc 2.28, so the library also runs on older distributions.
           - platform: x86_64-linux-gnu
             runner: ubuntu-latest
-            build_image: quay.io/pypa/manylinux_2_28_x86_64
+            build_image: MANYLINUX_X86_64_IMAGE
           - platform: aarch64-linux-gnu
-            runner: ubuntu-24.04-arm
-            build_image: quay.io/pypa/manylinux_2_28_aarch64
+            runner: ubuntu-26.04-arm
+            build_image: MANYLINUX_AARCH64_IMAGE
           - platform: x86_64-linux-musl
             runner: ubuntu-latest
-            build_image: alpine:3.22
+            build_image: ALPINE_IMAGE
             test_in_alpine: true
           - platform: aarch64-linux-musl
-            runner: ubuntu-24.04-arm
-            build_image: alpine:3.22
+            runner: ubuntu-26.04-arm
+            build_image: ALPINE_IMAGE
             test_in_alpine: true
           - platform: arm64-darwin
-            runner: macos-15
+            runner: macos-latest
           - platform: x86_64-darwin
-            runner: macos-15-intel
+            runner: macos-26-intel
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
@@ -99,10 +107,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Build library in ${{ matrix.build_image }}
+      - name: Build library in ${{ env[matrix.build_image] }}
         if: matrix.build_image
         env:
-          BUILD_IMAGE: ${{ matrix.build_image }}
+          BUILD_IMAGE: ${{ env[matrix.build_image] }}
         run: |
           docker run --rm -v "$PWD:/work" -w /work -e CC=gcc "$BUILD_IMAGE" sh -euc '
             if command -v apk >/dev/null; then
@@ -143,7 +151,7 @@ jobs:
       - name: Test the installed gem in Alpine
         if: matrix.test_in_alpine
         run: |
-          docker run --rm -v "$PWD:/work" -w /work -e PLATFORM -e WEBP_FFI_INSTALLED_GEM="$PLATFORM" "ruby:${RUBY_VERSION}-alpine" sh -euc '
+          docker run --rm -v "$PWD:/work" -w /work -e PLATFORM -e WEBP_FFI_INSTALLED_GEM="$PLATFORM" "$RUBY_ALPINE_IMAGE" sh -euc '
             # build tools only in case the ffi gem has no prebuilt version for this Ruby
             apk add --no-cache build-base libffi-dev
             gem install --no-document pkg/webp-ffi-*-"$PLATFORM".gem rspec

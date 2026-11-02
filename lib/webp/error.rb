@@ -7,7 +7,8 @@ module WebP
     "Cannot open output file",
     "Cannot crop picture",
     "Cannot resize picture",
-    "Cannot encode picture as WebP"]
+    "Cannot encode picture as WebP",
+    "Cannot allocate memory"]
 
   DECODER_ERRORS = [
     "Version mismatch",
@@ -15,7 +16,11 @@ module WebP
     "Invalid output format",
     "Decoding failed",
     "Cannot read input file",
-    "Cannot write output file"]
+    "Cannot write output file",
+    "Cannot allocate memory"]
+
+  # encode_data has no input file, so its read error says "data"
+  ENCODER_DATA_ERRORS = ENCODER_ERRORS.dup.tap { |messages| messages[2] = "Cannot read input picture data" }.freeze
 
   # error codes that point at the input or the output file
   ENCODER_FILE_ERRORS = { 3 => :input, 4 => :output }.freeze

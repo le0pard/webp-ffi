@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "webp/decode.h"
 #include "webp/encode.h"
@@ -30,6 +31,8 @@ typedef enum {
 } InputFileFormat;
 
 int UtilSaveOutput(const WebPDecBuffer* const buffer, OutputFileFormat format, const char* const out_file);
+// Writes 'buffer' in 'format' to an open file. Returns 1 on success.
+int UtilWriteOutput(const WebPDecBuffer* const buffer, OutputFileFormat format, FILE* const fout);
 // Allocates storage for entire file 'file_name' and returns contents and size
 // in 'data' and 'data_size'. Returns 1 on success, 0 otherwise. '*data' should
 // be deleted using free().
@@ -38,6 +41,10 @@ int UtilReadFile(const char* const file_name,
 
 int UtilReadPicture(const char* const filename, WebPPicture* const pic,
                       int keep_alpha);
+// Reads a PNG, JPEG or TIFF picture from an open file (or raw YUV when the
+// picture already has a size). Returns 1 on success.
+int UtilReadPictureFile(FILE* const in_file, WebPPicture* const pic,
+                        int keep_alpha);
 
 // Checks that a 'width' x 'height' image with 'bytes_per_px' bytes per pixel
 // fits in memory, using 64-bit math so the size can't wrap around.

@@ -19,6 +19,10 @@ describe "webp-ffi.gemspec", :source_tree do
     expect(gemspec.files.grep(%r{\Aspec/|\.(o|so|bundle|dylib)\z})).to be_empty
   end
 
+  it "needs Ruby 3.2 or newer, the oldest version CI tests" do
+    expect(gemspec.required_ruby_version).to eq(Gem::Requirement.new(">= 3.2"))
+  end
+
   it "builds the extension with ext/webp_ffi/Rakefile" do
     expect(gemspec.extensions).to eq(["ext/webp_ffi/Rakefile"])
   end

@@ -16,7 +16,7 @@ On these platforms `gem install webp-ffi` (or Bundler) picks a prebuilt gem, so 
 
  * Linux with glibc 2.28 or newer: `x86_64-linux-gnu`, `aarch64-linux-gnu`
  * Linux with musl (Alpine): `x86_64-linux-musl`, `aarch64-linux-musl`
- * macOS: `arm64-darwin` (Apple Silicon), `x86_64-darwin` (Intel)
+ * macOS 11 or newer: `arm64-darwin` (Apple Silicon), `x86_64-darwin` (Intel)
 
 The prebuilt gems include libwebp 1.6.0 together with libpng, libjpeg-turbo, libtiff and zlib. Their versions and licenses are in the gem, next to the library (`ext/webp_ffi/<platform>/versions.txt` and `licenses/`).
 
@@ -76,17 +76,13 @@ Or install it yourself as:
 
 ## Usage
 
-### Encoder end Decoder versions
+### Encoder and Decoder versions
 
 Basic info about libwebp (encoder and decoder versions):
 
-    $ irb
-    2.0.0p0 :001 > require 'webp_ffi'
-     => true
-    2.0.0p0 :002 > WebP.decoder_version
-     => "0.3.1"
-    2.0.0p0 :003 > WebP.encoder_version
-     => "0.3.1"
+    require 'webp_ffi'
+    WebP.decoder_version # => "1.6.0"
+    WebP.encoder_version # => "1.6.0"
 
 
 ### WebP size (width and height)
@@ -115,7 +111,7 @@ Encode png, jpg or tiff image to webp with options:
 
 File names can be strings or `Pathname` objects.
 
-Integer options also accept `true` and `false` (as 1 and 0). A value that is not a number raises `ArgumentError`. Unknown option names are ignored with a warning, so typos are easy to spot.
+Integer options also accept `true` and `false` (as 1 and 0). Unknown option names and values that are not numbers raise `ArgumentError`, so typos are easy to spot.
 
 Possible encode options:
 
@@ -170,7 +166,7 @@ Decode webp image with options:
     WebP.decode(filename, out_filename, crop_x: 0, crop_y: 0, crop_w: 100, crop_h: 100)
 
 
-Possible decode options (unknown options are ignored with a warning, and an unknown `output_format` raises `ArgumentError`):
+Possible decode options (unknown options and an unknown `output_format` raise `ArgumentError`):
 
  * **bypass\_filtering** (bool) - disable in-loop filtering
  * **no\_fancy\_upsampling** (bool) - don't use the fancy YUV420 upscaler
@@ -178,9 +174,21 @@ Possible decode options (unknown options are ignored with a warning, and an unkn
  * **crop\_x** (int), **crop\_y** (int), **crop\_w** (int), **crop\_h** (int) - crop picture with the given rectangle
  * **resize\_w** (int), **resize\_h** (int) - resize picture (after any cropping)
 
+### Encode and decode in memory
+
+`WebP.encode_data` and `WebP.decode_data` work with binary strings instead of files, for example for uploads or images stored in S3. They take the same options as `WebP.encode` and `WebP.decode`.
+
+    webp = WebP.encode_data(File.binread("photo.jpg"), quality: 80)
+    WebP.webp_size(webp) # => [1024, 772]
+
+    png = WebP.decode_data(webp)
+    tiff = WebP.decode_data(webp, output_format: :tiff, resize_w: 200, resize_h: 150)
+
+`encode_data` reads PNG, JPEG and TIFF data, or raw YUV 4:2:0 data when `width` and `height` are given. Errors raise `WebP::EncoderError` and `WebP::DecoderError`, like the file methods.
+
 ### Threads
 
-`WebP.encode` and `WebP.decode` release Ruby's Global VM Lock while libwebp works, so other threads (for example in Puma or Sidekiq) keep running during long conversions.
+`WebP.encode`, `WebP.decode`, `WebP.encode_data` and `WebP.decode_data` release Ruby's Global VM Lock while libwebp works, so other threads (for example in Puma or Sidekiq) keep running during long conversions.
 
 ## Rails assets pipeline integration
 

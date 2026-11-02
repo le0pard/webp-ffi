@@ -20,7 +20,7 @@ module WebP
     end
 
     def encode_pointer
-      warn_unknown_options(ENCODE_OPTIONS, "encode")
+      check_unknown_options(ENCODE_OPTIONS, "encode")
       options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpEncodeConfig.size, true
       options_struct = C::FfiWebpEncodeConfig.new options_pointer
       (ENCODE_INT_OPTIONS + [:target_PSNR]).each do |key|
@@ -36,7 +36,7 @@ module WebP
     end
 
     def decode_pointer
-      warn_unknown_options(DECODE_OPTIONS, "decode")
+      check_unknown_options(DECODE_OPTIONS, "decode")
       options_pointer = FFI::MemoryPointer.new :char, C::FfiWebpDecodeConfig.size, true
       options_struct = C::FfiWebpDecodeConfig.new options_pointer
       decode_default(options_struct)
@@ -54,13 +54,12 @@ module WebP
 
     private
 
-    # Unknown options are ignored, so a typo like :cropt_y used to fail silently.
-    # Warn for now; a future major version may raise instead.
-    def warn_unknown_options(known, operation)
-      (@user_options.keys - known).each do |key|
-        hint = suggestion(key, known)
-        warn "webp-ffi: ignoring unknown #{operation} option #{key.inspect}#{hint}"
-      end
+    # A typo like :cropt_y used to be ignored silently, so unknown options raise.
+    def check_unknown_options(known, operation)
+      unknown = @user_options.keys - known
+      return if unknown.empty?
+      details = unknown.map { |key| "#{key.inspect}#{suggestion(key, known)}" }
+      raise ArgumentError, "webp-ffi: unknown #{operation} option#{'s' if unknown.size > 1} #{details.join(', ')}"
     end
 
     def suggestion(key, known)

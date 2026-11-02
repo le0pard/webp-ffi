@@ -53,16 +53,21 @@ describe WebP::Options do
   end
 
   describe "unknown options" do
-    it "warns about a typo and suggests the right name" do
+    it "raises for a typo and suggests the right name" do
       expect { encode_config(cropt_y: 0) }
-        .to output(/ignoring unknown encode option :cropt_y \(did you mean :crop_y\?\)/).to_stderr
+        .to raise_error(ArgumentError, "webp-ffi: unknown encode option :cropt_y (did you mean :crop_y?)")
     end
 
-    it "warns about encode options passed to decode" do
-      expect { decode_config(quality: 50) }.to output(/ignoring unknown decode option :quality/).to_stderr
+    it "lists every unknown option" do
+      expect { encode_config(cropt_y: 0, colour: 1) }
+        .to raise_error(ArgumentError, /unknown encode options :cropt_y \(did you mean :crop_y\?\), :colour/)
     end
 
-    it "stays quiet for known options" do
+    it "raises for encode options passed to decode" do
+      expect { decode_config(quality: 50) }.to raise_error(ArgumentError, /unknown decode option :quality/)
+    end
+
+    it "accepts known options quietly" do
       expect { encode_config(quality: 50, crop_x: 1, lossless: 1) }.not_to output.to_stderr
       expect { decode_config(output_format: :tiff, use_threads: true, resize_w: 10) }.not_to output.to_stderr
     end
