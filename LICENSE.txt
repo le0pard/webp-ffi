@@ -1,4 +1,4 @@
-Copyright (c) 2013 Alexey Vasyliev
+Copyright (c) 2013 Oleksii Vasyliev
 
 MIT License
 

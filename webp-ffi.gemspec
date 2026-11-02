@@ -6,7 +6,7 @@ require 'webp/version'
 Gem::Specification.new do |spec|
   spec.name          = "webp-ffi"
   spec.version       = WebP::VERSION
-  spec.authors       = ["Alexey Vasyliev"]
+  spec.authors       = ["Oleksii Vasyliev"]
   spec.email         = ["leopard.not.a@gmail.com"]
   spec.description   = %q{Ruby wrapper for libwebp}
   spec.summary       = %q{Ruby wrapper for libwebp}
