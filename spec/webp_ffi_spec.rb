@@ -41,11 +41,6 @@ describe WebP do
     end
   end
 
-  it "calculate plus 100 by test_c (verify C)" do
-    expect(WebP::C.test_c(100)).to eq(200)
-    expect(WebP::C.test_c(150)).to eq(250)
-  end
-
   it "decoder version" do
     expect(WebP.decoder_version).not_to be_nil
     expect(WebP.decoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
@@ -53,7 +48,19 @@ describe WebP do
 
   it "encoder version" do
     expect(WebP.encoder_version).not_to be_nil
-    expect(WebP.decoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
+    expect(WebP.encoder_version).to match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/)
+  end
+
+  it "formats the packed libwebp version numbers" do
+    allow(WebP::C).to receive(:decoder_version).and_return(0x010600)
+    allow(WebP::C).to receive(:encoder_version).and_return(0x0a0b0c)
+    expect(WebP.decoder_version).to eq("1.6.0")
+    expect(WebP.encoder_version).to eq("10.11.12")
+  end
+
+  it "no longer defines the unused libc helpers or test functions" do
+    expect(defined?(WebP::LibC)).to be_nil
+    expect(WebP::C).not_to respond_to(:test_c)
   end
 
   context "webp_size" do
@@ -71,6 +78,16 @@ describe WebP do
       filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/1.png"))
       data = File.open(filename, "rb").read
       expect { WebP.webp_size(data) }.to raise_error WebP::InvalidImageFormatError
+    end
+    it "reads frozen strings" do
+      data = File.binread(File.expand_path(File.join(File.dirname(__FILE__), "factories/1.webp"))).freeze
+      expect(WebP.webp_size(data)).to eq([400, 301])
+    end
+    it "returns nil for nil" do
+      expect(WebP.webp_size(nil)).to be_nil
+    end
+    it "raise TypeError for data that is not a string", :outside_type_check do
+      expect { WebP.webp_size(12345) }.to raise_error(TypeError, /expected image data as a String or an IO, got Integer/)
     end
   end
 
@@ -107,6 +124,22 @@ describe WebP do
         out_filename = File.expand_path(File.join(@out_dir, "#{image}.tif.webp"))
         expect(WebP.encode(in_filename, out_filename)).to be_truthy
       end
+    end
+    it "multi-page tif image uses the first page" do
+      in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/multipage.tif"))
+      out_filename = File.expand_path(File.join(@out_dir, "multipage.tif.webp"))
+      expect(WebP.encode(in_filename, out_filename)).to be_truthy
+      expect(WebP.webp_size(File.binread(out_filename))).to eq([40, 30])
+    end
+    it "near_lossless produces a lossless image", if: Gem::Version.new(WebP.encoder_version) >= Gem::Version.new("0.5.0") do
+      in_filename = File.expand_path(File.join(File.dirname(__FILE__), "factories/1.png"))
+      lossy_filename = File.expand_path(File.join(@out_dir, "1_lossy.png.webp"))
+      near_filename = File.expand_path(File.join(@out_dir, "1_near.png.webp"))
+      WebP.encode(in_filename, lossy_filename)
+      WebP.encode(in_filename, near_filename, near_lossless: 60)
+      # lossless WebP files use a "VP8L" chunk right after the RIFF header
+      expect(File.binread(near_filename, 4, 12)).to eq("VP8L")
+      expect(File.binread(near_filename)).not_to eq(File.binread(lossy_filename))
     end
     factories[:webp].each do |image|
       it "raise EncoderError on #{image}.webp image" do

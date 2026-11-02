@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # keeps the commit hashes of the pinned actions (and their version comments) up to date
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ['*']

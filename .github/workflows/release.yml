@@ -1,0 +1,201 @@
+name: Release
+
+# A v* tag builds the source gem and the prebuilt platform gems, tests each
+# installed gem, then publishes them to RubyGems.org through trusted publishing.
+# Pull requests that touch the native build and manual runs build and test
+# everything without publishing.
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - '.github/workflows/release.yml'
+      - 'script/build-native.sh'
+      - 'rakelib/**'
+      - 'ext/webp_ffi/**'
+      - 'webp-ffi.gemspec'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Ruby used to build, package, test and publish the gems
+  RUBY_VERSION: '4.0'
+  # Docker images, pinned by digest. Dependabot does not update these: change the
+  # tag and the digest together, for example from `docker buildx imagetools inspect`.
+  MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:2026.11.01-2@sha256:7e41b1c7fd64dfc69703a1124b43c404382973ee06ec5d764b85c34d2221fded
+  MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64:2026.11.01-2@sha256:54b271d9562a3686298880df05367909e949ed317e7b1b79b59c696d75f78676
+  ALPINE_IMAGE: alpine:3.22.7@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+  # tests the musl gems; any recent Ruby works here
+  RUBY_ALPINE_IMAGE: ruby:4.0.9-alpine3.24@sha256:f1e530793cc09e1093417a4c9956069407155e1883d02beb30bda35ae54a47a3
+
+jobs:
+  source:
+    name: Source gem
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Check the tag matches the gem version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: bundle exec rake "release:check_version[$GITHUB_REF_NAME]"
+
+      - name: Build gem
+        run: |
+          mkdir -p pkg
+          gem build webp-ffi.gemspec --output "pkg/webp-ffi-$(ruby -Ilib -rwebp/version -e 'print WebP::VERSION').gem"
+
+      - name: Install system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -yq --no-install-recommends libwebp-dev libpng-dev libjpeg-dev libtiff-dev
+
+      - name: Test the installed gem
+        run: |
+          gem install --no-document pkg/webp-ffi-*.gem rspec
+          WEBP_FFI_INSTALLED_GEM=ruby rspec
+
+      - name: Upload gem
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gem-ruby
+          path: pkg/*.gem
+          if-no-files-found: error
+
+  native:
+    name: ${{ matrix.platform }} gem
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # build_image names one of the image variables in env above.
+          # manylinux_2_28 has glibc 2.28, so the library also runs on older distributions.
+          - platform: x86_64-linux-gnu
+            runner: ubuntu-latest
+            build_image: MANYLINUX_X86_64_IMAGE
+          - platform: aarch64-linux-gnu
+            runner: ubuntu-26.04-arm
+            build_image: MANYLINUX_AARCH64_IMAGE
+          - platform: x86_64-linux-musl
+            runner: ubuntu-latest
+            build_image: ALPINE_IMAGE
+            test_in_alpine: true
+          - platform: aarch64-linux-musl
+            runner: ubuntu-26.04-arm
+            build_image: ALPINE_IMAGE
+            test_in_alpine: true
+          - platform: arm64-darwin
+            runner: macos-latest
+          - platform: x86_64-darwin
+            runner: macos-26-intel
+    env:
+      PLATFORM: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build library in ${{ env[matrix.build_image] }}
+        if: matrix.build_image
+        env:
+          BUILD_IMAGE: ${{ env[matrix.build_image] }}
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work -e CC=gcc "$BUILD_IMAGE" sh -euc '
+            if command -v apk >/dev/null; then
+              apk add --no-cache build-base cmake curl linux-headers tar xz
+            fi
+            # nasm builds the x86_64 SIMD code of libjpeg-turbo; arm64 needs no assembler
+            if [ "$(uname -m)" = "x86_64" ]; then
+              if command -v apk >/dev/null; then apk add --no-cache nasm; fi
+              if command -v dnf >/dev/null; then
+                dnf install -y nasm || echo "nasm is not available: libjpeg-turbo builds without SIMD"
+              fi
+            fi
+            sh script/build-native.sh'
+          # the container wrote tmp/ as root
+          sudo chown -R "$(id -u):$(id -g)" .
+
+      - name: Build library on macOS
+        if: ${{ !matrix.build_image }}
+        run: |
+          if [ "$(uname -m)" = "x86_64" ]; then brew install nasm; fi
+          sh script/build-native.sh
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Package gem
+        run: bundle exec rake "native:gem[$PLATFORM]"
+
+      - name: Test the installed gem
+        if: ${{ !matrix.test_in_alpine }}
+        run: |
+          gem install --no-document pkg/webp-ffi-*-"$PLATFORM".gem rspec
+          WEBP_FFI_INSTALLED_GEM="$PLATFORM" rspec
+
+      - name: Test the installed gem in Alpine
+        if: matrix.test_in_alpine
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work -e PLATFORM -e WEBP_FFI_INSTALLED_GEM="$PLATFORM" "$RUBY_ALPINE_IMAGE" sh -euc '
+            # build tools only in case the ffi gem has no prebuilt version for this Ruby
+            apk add --no-cache build-base libffi-dev
+            gem install --no-document pkg/webp-ffi-*-"$PLATFORM".gem rspec
+            rspec'
+
+      - name: Upload gem
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gem-${{ matrix.platform }}
+          path: pkg/*-${{ matrix.platform }}.gem
+          if-no-files-found: error
+
+  publish:
+    name: Publish to RubyGems.org
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [source, native]
+    runs-on: ubuntu-latest
+    environment: rubygems
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download gems
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: gem-*
+          path: pkg
+          merge-multiple: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+
+      - name: Configure trusted publishing credentials
+        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
+
+      - name: Push gems
+        run: |
+          ls -l pkg
+          source_gem="pkg/webp-ffi-${GITHUB_REF_NAME#v}.gem"
+          test -f "$source_gem"
+          # platform gems first, so installs during the release never fall back to compiling
+          for gem in pkg/*.gem; do
+            if [ "$gem" != "$source_gem" ]; then gem push "$gem"; fi
+          done
+          gem push "$source_gem"

@@ -1,48 +1,212 @@
 #include "./tiffdec.h"
+#include "./util.h"
 
+#include <stdarg.h>
+#include <sys/types.h>
 #include <tiffio.h>
+#include <tiffvers.h>
 
-int UtilReadTIFF(const char* const filename,
-                    WebPPicture* const pic, int keep_alpha) {
-  TIFF* const tif = TIFFOpen(filename, "r");
+// libtiff 4.5.0 added error and warning handlers per opened file.
+#if defined(TIFFLIB_AT_LEAST)
+#if TIFFLIB_AT_LEAST(4, 5, 0)
+#define UTIL_TIFF_HAS_OPEN_OPTIONS
+#endif
+#endif
+
+#ifdef UTIL_TIFF_HAS_OPEN_OPTIONS
+// libtiff prints errors and warnings to stderr by default. A library should
+// stay quiet. Returning 1 also stops libtiff from calling its global handlers.
+static int SilentTIFFHandler(TIFF* tif, void* user_data, const char* module,
+                             const char* fmt, va_list ap) {
+  (void)tif;
+  (void)user_data;
+  (void)module;
+  (void)fmt;
+  (void)ap;
+  return 1;
+}
+#endif
+
+// libtiff reads through these callbacks, so the same code works for files and
+// for in-memory data opened with fmemopen.
+static tmsize_t UtilTIFFRead(thandle_t handle, void* buffer, tmsize_t size) {
+  if (size <= 0) return 0;
+  return (tmsize_t)fread(buffer, 1, (size_t)size, (FILE*)handle);
+}
+
+static tmsize_t UtilTIFFWrite(thandle_t handle, void* buffer, tmsize_t size) {
+  (void)handle;
+  (void)buffer;
+  (void)size;
+  return 0;  // read only
+}
+
+static toff_t UtilTIFFSeek(thandle_t handle, toff_t offset, int whence) {
+  FILE* const file = (FILE*)handle;
+  if (fseeko(file, (off_t)offset, whence) != 0) return (toff_t)-1;
+  return (toff_t)ftello(file);
+}
+
+static int UtilTIFFClose(thandle_t handle) {
+  (void)handle;
+  return 0;  // the caller closes the file
+}
+
+static toff_t UtilTIFFSize(thandle_t handle) {
+  FILE* const file = (FILE*)handle;
+  const off_t position = ftello(file);
+  off_t size;
+  if (position < 0 || fseeko(file, 0, SEEK_END) != 0) return 0;
+  size = ftello(file);
+  fseeko(file, position, SEEK_SET);
+  return size < 0 ? 0 : (toff_t)size;
+}
+
+static int UtilTIFFMap(thandle_t handle, void** base, toff_t* size) {
+  (void)handle;
+  (void)base;
+  (void)size;
+  return 0;  // no memory mapping
+}
+
+static void UtilTIFFUnmap(thandle_t handle, void* base, toff_t size) {
+  (void)handle;
+  (void)base;
+  (void)size;
+}
+
+// "m" turns off memory mapping, which a FILE* can't provide
+static TIFF* OpenTIFF(FILE* const file) {
+#ifdef UTIL_TIFF_HAS_OPEN_OPTIONS
+  TIFF* tif;
+  TIFFOpenOptions* const opts = TIFFOpenOptionsAlloc();
+  if (opts == NULL) return NULL;
+  TIFFOpenOptionsSetErrorHandlerExtR(opts, SilentTIFFHandler, NULL);
+  TIFFOpenOptionsSetWarningHandlerExtR(opts, SilentTIFFHandler, NULL);
+  tif = TIFFClientOpenExt("webp-ffi", "rm", (thandle_t)file,
+                          UtilTIFFRead, UtilTIFFWrite, UtilTIFFSeek, UtilTIFFClose,
+                          UtilTIFFSize, UtilTIFFMap, UtilTIFFUnmap, opts);
+  TIFFOpenOptionsFree(opts);
+  return tif;
+#else
+  // Older libtiff only has process-wide handlers. Changing those would affect
+  // other code in the same process, so its messages still reach stderr.
+  return TIFFClientOpen("webp-ffi", "rm", (thandle_t)file,
+                        UtilTIFFRead, UtilTIFFWrite, UtilTIFFSeek, UtilTIFFClose,
+                        UtilTIFFSize, UtilTIFFMap, UtilTIFFUnmap);
+#endif
+}
+
+const char* UtilTIFFVersion(void) {
+  return TIFFGetVersion();
+}
+
+// libtiff's RGBA interface always returns premultiplied (associated) alpha,
+// whatever kind of alpha the file stores, so undo the multiplication.
+// Based on MultARGBRow in libwebp's imageio/tiffdec.c (taken from libwebp's
+// dsp/alpha_processing).
+#define MFIX 24    // 24bit fixed-point arithmetic
+#define HALF ((1u << MFIX) >> 1)
+
+static uint32_t Unmult(uint8_t x, uint32_t mult) {
+  const uint32_t v = (x * mult + HALF) >> MFIX;
+  return (v > 255u) ? 255u : v;
+}
+
+static uint32_t GetScale(uint32_t a) {
+  return (255u << MFIX) / a;
+}
+
+#undef MFIX
+#undef HALF
+
+static void UnmultiplyRow(uint8_t* ptr, uint32_t width) {
+  uint32_t x;
+  for (x = 0; x < width; ++x, ptr += 4) {
+    const uint32_t alpha = ptr[3];
+    if (alpha < 255) {
+      if (alpha == 0) {
+        ptr[0] = ptr[1] = ptr[2] = 0;
+      } else {
+        const uint32_t scale = GetScale(alpha);
+        ptr[0] = (uint8_t)Unmult(ptr[0], scale);
+        ptr[1] = (uint8_t)Unmult(ptr[1], scale);
+        ptr[2] = (uint8_t)Unmult(ptr[2], scale);
+      }
+    }
+  }
+}
+
+// True when the first extra sample is alpha, associated or not.
+static int HasAlphaSample(TIFF* const tif) {
+  uint16_t count = 0;
+  uint16_t* samples = NULL;
+  return TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &count, &samples) && count > 0 &&
+         samples != NULL && (samples[0] == EXTRASAMPLE_ASSOCALPHA ||
+                             samples[0] == EXTRASAMPLE_UNASSALPHA);
+}
+
+static int ExtractMetadataFromTIFF(TIFF* const tif, Metadata* const metadata) {
+  uint32_t length = 0;
+  void* data = NULL;
+  if (TIFFGetField(tif, TIFFTAG_ICCPROFILE, &length, &data) &&
+      !MetadataCopy(data, length, &metadata->iccp)) {
+    return 0;
+  }
+  length = 0;
+  data = NULL;
+  if (TIFFGetField(tif, TIFFTAG_XMLPACKET, &length, &data) &&
+      !MetadataCopy(data, length, &metadata->xmp)) {
+    return 0;
+  }
+  return 1;
+}
+
+int UtilReadTIFF(FILE* const in_file,
+                    WebPPicture* const pic, int keep_alpha,
+                    Metadata* const metadata) {
+  TIFF* const tif = OpenTIFF(in_file);
   uint32_t width, height;
   uint32_t* raster;
+  int stride;
+  size_t raster_size;
   int ok = 0;
-  int dircount = 1;
 
   if (tif == NULL) {
-    //fprintf(stderr, "Error! Cannot open TIFF file '%s'\n", filename);
     return 0;
   }
 
-  while (TIFFReadDirectory(tif)) ++dircount;
-
-  if (dircount > 1) {
-    fprintf(stderr, "Warning: multi-directory TIFF files are not supported.\n"
-                    "Only the first will be used, %d will be ignored.\n",
-                    dircount - 1);
+  // Multi-page TIFF files are not supported: only the first page is used.
+  if (!TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width) ||
+      !TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height) ||
+      !UtilCheckImageSize(width, height, sizeof(*raster),
+                          &stride, &raster_size) ||
+      (metadata != NULL && !ExtractMetadataFromTIFF(tif, metadata))) {
+    TIFFClose(tif);
+    return 0;
   }
 
-  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
-  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
-  raster = (uint32_t*)_TIFFmalloc(width * height * sizeof(*raster));
+  raster = (uint32_t*)_TIFFmalloc(raster_size);
   if (raster != NULL) {
     if (TIFFReadRGBAImageOriented(tif, width, height, raster,
                                   ORIENTATION_TOPLEFT, 1)) {
-      const int stride = width * sizeof(*raster);
-      pic->width = width;
-      pic->height = height;
+      pic->width = (int)width;
+      pic->height = (int)height;
       // TIFF data is ABGR
 #ifdef __BIG_ENDIAN__
-      TIFFSwabArrayOfLong(raster, width * height);
+      TIFFSwabArrayOfLong(raster, raster_size / sizeof(*raster));
 #endif
+      if (keep_alpha && HasAlphaSample(tif)) {
+        uint32_t y;
+        for (y = 0; y < height; ++y) {
+          UnmultiplyRow((uint8_t*)raster + (size_t)y * stride, width);
+        }
+      }
       ok = keep_alpha
          ? WebPPictureImportRGBA(pic, (const uint8_t*)raster, stride)
          : WebPPictureImportRGBX(pic, (const uint8_t*)raster, stride);
     }
     _TIFFfree(raster);
-  } else {
-    //fprintf(stderr, "Error allocating TIFF RGBA memory!\n");
   }
 
   if (ok && keep_alpha == 2) {

@@ -42,6 +42,16 @@ extern "C" {
     int width, height;
     int crop_x, crop_y, crop_w, crop_h;
     int resize_w, resize_h;
+    // -1 keeps the libwebp default for the options below
+    int preset;             // WebPPreset, applied before the other options
+    int image_hint;         // WebPImageHint
+    int exact;              // keep RGB values under transparent areas
+    int use_sharp_yuv;      // sharper (and slower) RGB to YUV conversion
+    int thread_level;       // multi-threaded encoding
+    int low_memory;         // less memory, more CPU
+    int emulate_jpeg_size;  // quality comparable to JPEG at the same size
+    int lossless_level;     // 0..9, WebPConfigLosslessPreset (turns on lossless)
+    int metadata;           // METADATA_* flags: what to copy from the input
   } FfiWebpEncodeConfig;
 
   typedef struct {
@@ -54,12 +64,44 @@ extern "C" {
   } FfiWebpDecodeConfig;
 
 
-  void decoder_version(char *version);
-  void encoder_version(char *version);
+  typedef struct {
+    int width, height;
+    int has_alpha, has_animation;
+    int format;  // 0 = mixed or unknown, 1 = lossy, 2 = lossless
+  } FfiWebpFeatures;
+
+  // Versions are packed as 0xMMmmpp (major, minor, patch).
+  int decoder_version(void);
+  int encoder_version(void);
   int webp_get_info(const uint8_t* data, size_t data_size, int* width, int* height);
-  int webp_encode(const char *in_file, const char *out_file, const FfiWebpEncodeConfig *encode_config);
-  int webp_decode(const char *in_file, const char *out_file, const FfiWebpDecodeConfig *decode_config);
-  int test_c(int n);
+  // Returns a VP8StatusCode, 0 when 'features' was filled.
+  int webp_get_features(const uint8_t* data, size_t data_size, FfiWebpFeatures* features);
+
+  // All functions below return 0 on success or an error code (see
+  // lib/webp/error.rb). On failure '*detail' holds libwebp's own reason when
+  // there is one: a WebPEncodingError when encoding, a VP8StatusCode when
+  // decoding, otherwise 0.
+  int webp_encode(const char *in_file, const char *out_file,
+                  const FfiWebpEncodeConfig *encode_config, int* detail);
+  int webp_decode(const char *in_file, const char *out_file,
+                  const FfiWebpDecodeConfig *decode_config, int* detail);
+
+  // In-memory versions: on success '*output' holds 'output_size' bytes that the
+  // caller frees with webp_free_data. On failure '*output' is NULL.
+  int webp_encode_data(const uint8_t* data, size_t data_size,
+                       uint8_t** output, size_t* output_size,
+                       const FfiWebpEncodeConfig* encode_config, int* detail);
+  int webp_decode_data(const uint8_t* data, size_t data_size,
+                       uint8_t** output, size_t* output_size,
+                       const FfiWebpDecodeConfig* decode_config, int* detail);
+  // Raw pixels: 'rgba' holds width * height * 4 bytes, row after row.
+  int webp_encode_rgba(const uint8_t* rgba, int width, int height,
+                       uint8_t** output, size_t* output_size,
+                       const FfiWebpEncodeConfig* encode_config, int* detail);
+  int webp_decode_rgba(const uint8_t* data, size_t data_size,
+                       uint8_t** output, size_t* output_size, int* width, int* height,
+                       const FfiWebpDecodeConfig* decode_config, int* detail);
+  void webp_free_data(uint8_t* data);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }    // extern "C"

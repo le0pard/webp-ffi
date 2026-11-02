@@ -1,17 +1,26 @@
 name: Build
-on: push
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   test:
-    name: "Build"
+    name: "Linux, Ruby ${{ matrix.ruby }}, libwebp ${{ matrix.libwebp }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
         ruby: ['3.2', '3.3', '3.4', '4.0']
-        libwebp: ['0.4.4', '1.0.2', '1.6.0']
+        # 1.0.0 is the oldest supported libwebp
+        libwebp: ['1.0.0', '1.6.0']
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install deps
         run: |
@@ -19,7 +28,7 @@ jobs:
           sudo apt -yq --no-install-recommends install libjpeg-dev libpng-dev libtiff-dev
 
       - name: Setup Ruby ${{ matrix.ruby }}
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           bundler-cache: true
           ruby-version: ${{ matrix.ruby }}
@@ -32,9 +41,11 @@ jobs:
 
       - name: Set envs
         run: |
+          echo "C_FLAGS=-I$HOME/opt/include" >> $GITHUB_ENV
           echo "LD_FLAGS=-L$HOME/opt/lib" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib:$HOME/opt/lib" >> $GITHUB_ENV
-          echo "CPATH=$CPATH:$HOME/opt/include" >> $GITHUB_ENV
+          # cwebp from the same libwebp build, for the byte-for-byte comparison specs
+          echo "$HOME/opt/bin" >> $GITHUB_PATH
 
       - name: Build package
         run: |
@@ -44,7 +55,75 @@ jobs:
         run: |
           bundle exec rake spec
 
+  macos:
+    name: "macOS, Ruby ${{ matrix.ruby }}, Homebrew libwebp"
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        ruby: ['3.4', '4.0']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
+      - name: Install deps
+        run: |
+          brew install webp libpng jpeg-turbo libtiff
 
+      - name: Setup Ruby ${{ matrix.ruby }}
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          bundler-cache: true
+          ruby-version: ${{ matrix.ruby }}
 
+      # no C_FLAGS or LD_FLAGS here: the build must find Homebrew by itself
+      - name: Build package
+        run: |
+          bundle exec rake compile
 
+      - name: Test package
+        run: |
+          bundle exec rake spec
+
+      - name: Check type signatures at runtime
+        run: |
+          bundle exec rake spec:types
+
+  sanitizers:
+    name: "Linux, AddressSanitizer and UndefinedBehaviorSanitizer"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -yq --no-install-recommends libwebp-dev libpng-dev libjpeg-dev libtiff-dev
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          bundler-cache: true
+          ruby-version: '4.0'
+
+      - name: Build package with sanitizers
+        env:
+          CFLAGS: "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all"
+          LDFLAGS: "-fsanitize=address,undefined"
+        run: |
+          bundle exec rake compile
+
+      - name: Test package with sanitizers
+        env:
+          ASAN_OPTIONS: "detect_leaks=0:detect_stack_use_after_return=0:abort_on_error=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+        # The sanitizer runtime has to be preloaded into Ruby, which is not built
+        # with it. Like that it aborts when Ruby starts threads or child
+        # processes, so those specs only run in the other jobs.
+        run: |
+          bundle exec env LD_PRELOAD="$(gcc -print-file-name=libasan.so)" \
+            rspec --exclude-pattern "spec/{build_config,cwebp,threads}_spec.rb"

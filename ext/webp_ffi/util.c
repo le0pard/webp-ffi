@@ -1,3 +1,5 @@
+#include <limits.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +15,34 @@
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
+
+// Same memory cap as the image readers in libwebp (imageio/imageio_util.c).
+#if SIZE_MAX > (1ULL << 34)
+#define UTIL_MAX_ALLOCABLE_MEMORY (1ULL << 34)
+#else
+#define UTIL_MAX_ALLOCABLE_MEMORY ((1ULL << 31) - (1 << 16))
+#endif
+#define UTIL_MAX_BYTES_PER_PIXEL 8
+
+int UtilCheckImageSize(uint64_t width, uint64_t height, uint64_t bytes_per_px,
+                       int* const stride, size_t* const size) {
+  uint64_t row_size, total_size;
+
+  if (width == 0 || height == 0) return 0;
+  if (bytes_per_px == 0 || bytes_per_px > UTIL_MAX_BYTES_PER_PIXEL) return 0;
+  // WebPPicture and the row strides passed to libwebp are plain ints.
+  if (width > INT_MAX || height > INT_MAX) return 0;
+
+  // Both products stay far below 2^64 because of the limits checked above.
+  row_size = width * bytes_per_px;
+  if (row_size > INT_MAX) return 0;
+  total_size = row_size * height;
+  if (total_size > UTIL_MAX_ALLOCABLE_MEMORY) return 0;
+
+  if (stride != NULL) *stride = (int)row_size;
+  if (size != NULL) *size = (size_t)total_size;
+  return 1;
+}
 
 static int UtilReadYUV(FILE* in_file, WebPPicture* const pic) {
   const int use_argb = pic->use_argb;
@@ -54,7 +84,9 @@ static InputFileFormat GetImageType(FILE* in_file) {
     return format;
   }
 
-  magic = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+  // shift unsigned values: buf[0] << 24 as an int overflows for bytes >= 0x80
+  magic = ((unsigned int)buf[0] << 24) | ((unsigned int)buf[1] << 16) |
+          ((unsigned int)buf[2] << 8) | buf[3];
   if (magic == 0x89504E47U) {
     format = iPNG_;
   } else if (magic >= 0xFFD8FF00U && magic <= 0xFFD8FFFFU) {
@@ -65,44 +97,53 @@ static InputFileFormat GetImageType(FILE* in_file) {
   return format;
 }
 
-int UtilReadPicture(const char* const filename, WebPPicture* const pic,
-                       int keep_alpha) {
+int UtilReadPictureFile(FILE* const in_file, WebPPicture* const pic,
+                        int keep_alpha, Metadata* const metadata) {
   int ok = 0;
-  FILE* in_file = fopen(filename, "rb");
-  if (in_file == NULL) {
-    //fprintf(stderr, "Error! Cannot open input file '%s'\n", filename);
-    return ok;
-  }
 
   if (pic->width == 0 || pic->height == 0) {
-    // If no size specified, try to decode it as PNG/JPEG (as appropriate).
+    // If no size specified, try to decode it as PNG/JPEG/TIFF (as appropriate).
     const InputFileFormat format = GetImageType(in_file);
     if (format == iPNG_) {
-      ok = UtilReadPNG(in_file, pic, keep_alpha);
+      ok = UtilReadPNG(in_file, pic, keep_alpha, metadata);
     } else if (format == iJPEG_) {
-      ok = UtilReadJPEG(in_file, pic);
+      ok = UtilReadJPEG(in_file, pic, metadata);
     } else if (format == iTIFF_) {
-      ok = UtilReadTIFF(filename, pic, keep_alpha);
+      ok = UtilReadTIFF(in_file, pic, keep_alpha, metadata);
     }
   } else {
     // If image size is specified, infer it as YUV format.
     ok = UtilReadYUV(in_file, pic);
   }
-
-  fclose(in_file);
   return ok;
+}
+
+int UtilFileExists(const char* const path) {
+  struct stat info;
+  return stat(path, &info) == 0;
 }
 
 int UtilSaveOutput(const WebPDecBuffer* const buffer,
                        OutputFileFormat format, const char* const out_file) {
-  FILE* fout = NULL;
-  int ok = 1;
-
-  fout = fopen(out_file, "wb");
+  // a failed write removes the file, but only when this call created it
+  const int existed = UtilFileExists(out_file);
+  int ok;
+  FILE* const fout = fopen(out_file, "wb");
   if (!fout) {
-    fprintf(stderr, "Error opening output file %s\n", out_file);
     return 0;
   }
+  ok = UtilWriteOutput(buffer, format, fout);
+  // fclose flushes buffered data, so it can also fail (for example, disk full)
+  if (fclose(fout) != 0) {
+    ok = 0;
+  }
+  if (!ok && !existed) remove(out_file);
+  return ok;
+}
+
+int UtilWriteOutput(const WebPDecBuffer* const buffer,
+                    OutputFileFormat format, FILE* const fout) {
+  int ok = 1;
 
   if (format == oPNG) {
     ok &= UtilWritePNG(fout, buffer);
@@ -114,14 +155,14 @@ int UtilSaveOutput(const WebPDecBuffer* const buffer,
     ok &= UtilWriteBMP(fout, buffer);
   } else if (format == oTIFF_) {
     ok &= UtilWriteTIFF(fout, buffer);
-  } else if (format == oPGM || format == oYUV) {
+  } else if (format == oPGM) {
     ok &= UtilWritePGM(fout, buffer);
+  } else if (format == oYUV) {
+    ok &= UtilWriteYUV(fout, buffer);
   } else if (format == ALPHA_PLANE_ONLY) {
     ok &= UtilWriteAlphaPlane(fout, buffer);
-  }
-
-  if (fout) {
-    fclose(fout);
+  } else {
+    ok = 0;
   }
   return ok;
 }
@@ -133,7 +174,8 @@ int UtilReadFile(const char* const file_name,
                    const uint8_t** data, size_t* data_size) {
   int ok;
   void* file_data;
-  size_t file_size;
+  long file_size;
+  struct stat info;
   FILE* in;
 
   if (file_name == NULL || data == NULL || data_size == NULL) return 0;
@@ -142,25 +184,30 @@ int UtilReadFile(const char* const file_name,
 
   in = fopen(file_name, "rb");
   if (in == NULL) {
-    fprintf(stderr, "cannot open input file '%s'\n", file_name);
     return 0;
   }
-  fseek(in, 0, SEEK_END);
-  file_size = ftell(in);
-  fseek(in, 0, SEEK_SET);
-  file_data = malloc(file_size);
-  if (file_data == NULL) return 0;
-  ok = (fread(file_data, file_size, 1, in) == 1);
+  // only regular files: on Linux a folder opens and reports a huge size
+  if (fstat(fileno(in), &info) != 0 || !S_ISREG(info.st_mode) ||
+      fseek(in, 0, SEEK_END) != 0 ||
+      (file_size = ftell(in)) <= 0 ||
+      fseek(in, 0, SEEK_SET) != 0) {
+    fclose(in);
+    return 0;
+  }
+  file_data = malloc((size_t)file_size);
+  if (file_data == NULL) {
+    fclose(in);
+    return 0;
+  }
+  ok = (fread(file_data, (size_t)file_size, 1, in) == 1);
   fclose(in);
 
   if (!ok) {
-    fprintf(stderr, "Could not read %zu bytes of data from file %s\n",
-            file_size, file_name);
     free(file_data);
     return 0;
   }
   *data = (uint8_t*)file_data;
-  *data_size = file_size;
+  *data_size = (size_t)file_size;
   return 1;
 }
 

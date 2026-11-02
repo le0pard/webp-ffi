@@ -1,0 +1,74 @@
+# Type signatures for the public API of the webp-ffi gem.
+module WebP
+  VERSION: String
+
+  # A file name: a String, a Pathname or anything with #to_path.
+  type path = String | _ToPath
+
+  # Image data: a String (or anything with #to_str) or an IO to read from.
+  type data = String | _ToStr | _ReadableData
+
+  interface _ReadableData
+    def read: () -> String?
+  end
+
+  # Options are a Hash with Symbol keys; see the README for the names.
+  type options = Hash[Symbol, untyped]
+
+  class Error < StandardError
+    attr_reader code: Integer?
+    attr_reader reason: Symbol?
+
+    def initialize: (?String? message, ?code: Integer?, ?reason: Symbol?) -> void
+  end
+
+  class InvalidImageFormatError < Error
+  end
+
+  class EncoderError < Error
+  end
+
+  class DecoderError < Error
+  end
+
+  class Info < Data
+    attr_reader width: Integer
+    attr_reader height: Integer
+    attr_reader format: :lossy | :lossless | :mixed
+    attr_reader alpha: bool
+    attr_reader animated: bool
+    attr_reader metadata: Array[:icc | :exif | :xmp]
+
+    def self.new: (width: Integer, height: Integer, format: :lossy | :lossless | :mixed, alpha: bool,
+                   animated: bool, metadata: Array[:icc | :exif | :xmp]) -> instance
+
+    def lossless?: () -> bool
+    def alpha?: () -> bool
+    def animated?: () -> bool
+  end
+
+  class RGBAImage < Data
+    attr_reader rgba: String
+    attr_reader width: Integer
+    attr_reader height: Integer
+
+    def self.new: (rgba: String, width: Integer, height: Integer) -> instance
+  end
+
+  def self.decoder_version: () -> String
+  def self.encoder_version: () -> String
+
+  def self.webp_size: (data data) -> [Integer, Integer]
+                    | (nil) -> nil
+  def self.info: (data data) -> Info
+               | (nil) -> nil
+
+  def self.encode: (path input_file, path output_file, ?options options) -> true
+  def self.decode: (path input_file, path output_file, ?options options) -> true
+
+  def self.encode_data: (data data, ?options options) -> String
+  def self.decode_data: (data data, ?options options) -> String
+
+  def self.encode_rgba: (String | _ToStr | _ReadableData pixels, Integer width, Integer height, ?options options) -> String
+  def self.decode_rgba: (data data, ?options options) -> RGBAImage
+end
