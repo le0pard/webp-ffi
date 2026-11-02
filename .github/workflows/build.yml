@@ -4,6 +4,9 @@ on:
     branches: [master]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: "Linux, Ruby ${{ matrix.ruby }}, libwebp ${{ matrix.libwebp }}"
@@ -14,7 +17,9 @@ jobs:
         libwebp: ['0.4.4', '1.0.2', '1.6.0']
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install deps
         run: |
@@ -22,7 +27,7 @@ jobs:
           sudo apt -yq --no-install-recommends install libjpeg-dev libpng-dev libtiff-dev
 
       - name: Setup Ruby ${{ matrix.ruby }}
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           bundler-cache: true
           ruby-version: ${{ matrix.ruby }}
@@ -55,14 +60,16 @@ jobs:
         ruby: ['3.4', '4.0']
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install deps
         run: |
           brew install webp libpng jpeg-turbo libtiff
 
       - name: Setup Ruby ${{ matrix.ruby }}
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           bundler-cache: true
           ruby-version: ${{ matrix.ruby }}

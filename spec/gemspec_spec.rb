@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "webp-ffi.gemspec" do
+describe "webp-ffi.gemspec", :source_tree do
   let(:root) { File.expand_path("..", __dir__) }
   let(:gemspec) { Gem::Specification.load(File.join(root, "webp-ffi.gemspec")) }
 

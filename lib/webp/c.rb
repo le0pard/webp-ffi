@@ -66,6 +66,8 @@ module WebP
 
     # internal: image size check shared by the PNG, JPEG and TIFF readers
     attach_function :check_image_size, :UtilCheckImageSize, [:uint64, :uint64, :uint64, :pointer, :pointer], :int
+    # internal: version string of the libtiff in use
+    attach_function :tiff_version, :UtilTIFFVersion, [], :string
 
     attach_function :test_c, [:int], :int
   end

@@ -18,6 +18,10 @@ int UtilReadTIFF(const char* const filename,
 int UtilWriteTIFF(FILE* fout, const WebPDecBuffer* const buffer);
 int UtilWriteBMP(FILE* fout, const WebPDecBuffer* const buffer);
 
+// Version string of the libtiff in use. Prebuilt gems keep the bundled
+// libtiff symbols private, so the specs ask through this function.
+const char* UtilTIFFVersion(void);
+
 #ifdef __cplusplus
 }    // extern "C"
 #endif

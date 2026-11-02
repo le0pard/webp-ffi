@@ -3,7 +3,7 @@ require 'fileutils'
 require 'ffi-compiler/compile_task'
 require_relative '../ext/webp_ffi/build_config'
 
-describe WebPFFI::BuildConfig do
+describe WebPFFI::BuildConfig, :source_tree do
   around do |example|
     Dir.mktmpdir("webp-ffi-build") do |dir|
       @dir = dir

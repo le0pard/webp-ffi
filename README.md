@@ -10,6 +10,30 @@ WebP is a new image format that provides lossless and lossy compression for imag
 
 ## Installation
 
+### Prebuilt gems
+
+On these platforms `gem install webp-ffi` (or Bundler) picks a prebuilt gem, so nothing is compiled and no system libraries are needed:
+
+ * Linux with glibc 2.28 or newer: `x86_64-linux-gnu`, `aarch64-linux-gnu`
+ * Linux with musl (Alpine): `x86_64-linux-musl`, `aarch64-linux-musl`
+ * macOS: `arm64-darwin` (Apple Silicon), `x86_64-darwin` (Intel)
+
+The prebuilt gems include libwebp 1.6.0 together with libpng, libjpeg-turbo, libtiff and zlib. Their versions and licenses are in the gem, next to the library (`ext/webp_ffi/<platform>/versions.txt` and `licenses/`).
+
+If your `Gemfile.lock` lists only the `ruby` platform, add yours, for example:
+
+    bundle lock --add-platform x86_64-linux-gnu
+
+To build against the system libraries instead, install the source gem:
+
+    gem install webp-ffi --platform ruby
+
+or in a `Gemfile`:
+
+    gem "webp-ffi", force_ruby_platform: true
+
+The rest of this section applies to the source gem.
+
 ### Requirements
 
 First of all you should have install libraries: libpng, libjpeg and libtiff.
@@ -198,6 +222,13 @@ namespace :assets do
   end
 end
 ```
+
+## Releasing
+
+1. Update `WebP::VERSION` in `lib/webp/version.rb` and the CHANGELOG.
+2. Commit, then push a tag that matches the version: `git tag v1.0.0 && git push origin v1.0.0`.
+
+The Release workflow builds the source gem and every prebuilt gem, tests each one after installing it, and publishes them to RubyGems.org with trusted publishing. To try the builds without publishing, run the workflow by hand from the Actions tab.
 
 ## Contributing
 

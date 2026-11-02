@@ -43,6 +43,10 @@ static TIFF* OpenTIFF(const char* const filename) {
 #endif
 }
 
+const char* UtilTIFFVersion(void) {
+  return TIFFGetVersion();
+}
+
 int UtilReadTIFF(const char* const filename,
                     WebPPicture* const pic, int keep_alpha) {
   TIFF* const tif = OpenTIFF(filename);

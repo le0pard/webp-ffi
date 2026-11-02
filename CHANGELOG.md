@@ -21,6 +21,9 @@
 * Raise `ArgumentError` for option values that are not numbers
 * Accept `true` and `false` for integer options; `false` now means 0 instead of the libwebp default
 * Accept the decode `output_format` as a string
+* Publish prebuilt gems for Linux (glibc and musl, x86_64 and aarch64) and macOS (arm64 and x86_64) with libwebp 1.6.0, libpng, libjpeg-turbo, libtiff and zlib included
+* Release from a `v*` tag through GitHub Actions and RubyGems.org trusted publishing
+* Pin GitHub Actions to commit hashes and keep them updated with Dependabot
 
 ## v0.4.0
 

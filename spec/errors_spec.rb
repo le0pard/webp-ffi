@@ -10,12 +10,7 @@ describe "WebP errors" do
 
   # libtiff before 4.5.0 can only print through process-wide handlers
   def self.libtiff_version
-    tiff = Module.new do
-      extend FFI::Library
-      ffi_lib FFI::Compiler::Loader.find('webp_ffi')
-      attach_function :TIFFGetVersion, [], :string
-    end
-    Gem::Version.new(tiff.TIFFGetVersion[/Version (\d+\.\d+\.\d+)/, 1])
+    Gem::Version.new(WebP::C.tiff_version[/Version (\d+\.\d+\.\d+)/, 1])
   end
 
   describe ".encode" do
