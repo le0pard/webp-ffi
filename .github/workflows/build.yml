@@ -28,7 +28,7 @@ jobs:
           sudo apt -yq --no-install-recommends install libjpeg-dev libpng-dev libtiff-dev
 
       - name: Setup Ruby ${{ matrix.ruby }}
-        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           bundler-cache: true
           ruby-version: ${{ matrix.ruby }}
@@ -72,7 +72,7 @@ jobs:
           brew install webp libpng jpeg-turbo libtiff
 
       - name: Setup Ruby ${{ matrix.ruby }}
-        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           bundler-cache: true
           ruby-version: ${{ matrix.ruby }}
@@ -105,7 +105,7 @@ jobs:
           sudo apt-get install -yq --no-install-recommends libwebp-dev libpng-dev libjpeg-dev libtiff-dev
 
       - name: Setup Ruby
-        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           bundler-cache: true
           ruby-version: '4.0'
